@@ -59,36 +59,79 @@ interface Word {
   createdAt: number;
 }
 
-const PixelCat = () => (
-  <svg width="120" height="120" viewBox="0 0 120 120" className="drop-shadow-[0_0_10px_rgba(225,29,72,0.5)]">
-    {/* Body */}
-    <rect x="30" y="40" width="60" height="60" fill="#fb7185" />
-    <rect x="20" y="50" width="10" height="40" fill="#fb7185" />
-    <rect x="90" y="50" width="10" height="40" fill="#fb7185" />
-    
-    {/* Ears */}
-    <rect x="30" y="20" width="20" height="20" fill="#fb7185" />
-    <rect x="70" y="20" width="20" height="20" fill="#fb7185" />
-    
-    {/* Eyes */}
-    <rect x="40" y="50" width="10" height="10" fill="#FFF" />
-    <rect x="70" y="50" width="10" height="10" fill="#FFF" />
-    
-    {/* Pupils */}
-    <rect x="43" y="53" width="4" height="4" fill="#881337" />
-    <rect x="73" y="53" width="4" height="4" fill="#881337" />
-    
-    {/* Nose */}
-    <rect x="55" y="65" width="10" height="5" fill="#881337" opacity="0.3" />
-    
-    {/* Tail */}
-    <rect x="10" y="70" width="10" height="10" fill="#fb7185" />
-    <rect x="0" y="60" width="10" height="10" fill="#fb7185" />
-    
-    {/* Feet */}
-    <rect x="35" y="100" width="15" height="10" fill="#fb7185" />
-    <rect x="70" y="100" width="15" height="10" fill="#fb7185" />
-  </svg>
+const PixelCat = ({ className = "", animated = true }: { className?: string; animated?: boolean }) => (
+  <motion.div
+    animate={animated ? {
+      y: [0, -4, 0],
+      scaleY: [1, 0.95, 1],
+    } : {}}
+    transition={{
+      duration: 0.4,
+      repeat: Infinity,
+      ease: "easeInOut"
+    }}
+    className={className}
+  >
+    <svg width="80" height="80" viewBox="0 0 120 120" className="drop-shadow-[0_0_15px_rgba(59,130,246,0.6)]">
+      {/* Body - Blue */}
+      <rect x="30" y="40" width="60" height="60" fill="#2563eb" />
+      <rect x="20" y="50" width="10" height="40" fill="#2563eb" />
+      <rect x="90" y="50" width="10" height="40" fill="#2563eb" />
+      
+      {/* Belly - Lighter Blue */}
+      <rect x="45" y="60" width="30" height="40" fill="#60a5fa" />
+      
+      {/* Wings - Yellow/Cyan */}
+      <motion.g
+        animate={animated ? {
+          rotate: [-5, 10, -5],
+          y: [0, -2, 0]
+        } : {}}
+        transition={{ duration: 0.2, repeat: Infinity }}
+        style={{ originX: '60px', originY: '40px' }}
+      >
+        <rect x="10" y="30" width="20" height="10" fill="#fbbf24" />
+        <rect x="5" y="20" width="15" height="10" fill="#22d3ee" />
+        <rect x="90" y="30" width="20" height="10" fill="#fbbf24" />
+        <rect x="100" y="20" width="15" height="10" fill="#22d3ee" />
+      </motion.g>
+
+      {/* Ears */}
+      <rect x="30" y="20" width="20" height="20" fill="#1e40af" />
+      <rect x="70" y="20" width="20" height="20" fill="#1e40af" />
+      
+      {/* Eyes - Yellow */}
+      <rect x="40" y="50" width="10" height="10" fill="#facc15" />
+      <rect x="70" y="50" width="10" height="10" fill="#facc15" />
+      
+      {/* Pupils */}
+      <rect x="43" y="53" width="4" height="4" fill="#000" />
+      <rect x="73" y="53" width="4" height="4" fill="#000" />
+      
+      {/* Nose - Pink */}
+      <rect x="55" y="65" width="10" height="5" fill="#f472b6" />
+      
+      {/* Tail */}
+      <motion.rect 
+        x="100" y="60" width="10" height="10" fill="#2563eb"
+        animate={animated ? { rotate: [-10, 10, -10] } : {}}
+        transition={{ duration: 1, repeat: Infinity }}
+      />
+      <rect x="110" y="50" width="10" height="10" fill="#2563eb" />
+      
+      {/* Feet - Walking Animation */}
+      <motion.rect 
+        x="35" y="100" width="15" height="10" fill="#1e40af" 
+        animate={animated ? { y: [0, -5, 0], x: [35, 30, 35] } : {}}
+        transition={{ duration: 0.4, repeat: Infinity }}
+      />
+      <motion.rect 
+        x="70" y="100" width="15" height="10" fill="#1e40af" 
+        animate={animated ? { y: [0, -5, 0], x: [70, 75, 70] } : {}}
+        transition={{ duration: 0.4, repeat: Infinity, delay: 0.2 }}
+      />
+    </svg>
+  </motion.div>
 );
 
 export default function App() {
@@ -156,6 +199,14 @@ export default function App() {
       unlocked: false,
       rarity: 'Rare',
       description: 'Always dressed for a fancy occasion.'
+    },
+    {
+      id: 'cat-7',
+      name: 'Azure Guardian',
+      imageUrl: 'https://images.unsplash.com/photo-1574158622682-e40e69881006?auto=format&fit=crop&w=1000&q=80',
+      unlocked: false,
+      rarity: 'Legendary',
+      description: 'A mystical blue cat with shimmering wings that protects the ancient scrolls.'
     }
   ]);
   const [activeCatIndex, setActiveCatIndex] = useState(0);
@@ -373,6 +424,19 @@ export default function App() {
           }
           return lvl;
         });
+
+        // Unlock a cat every 5 levels (order 4, 9, 14...)
+        if ((currentOrder + 1) % 5 === 0) {
+          setMapCats(prevCats => {
+            const lockedCats = prevCats.filter(c => !c.unlocked);
+            if (lockedCats.length > 0) {
+              const catToUnlock = lockedCats[0];
+              return prevCats.map(c => c.id === catToUnlock.id ? { ...c, unlocked: true } : c);
+            }
+            return prevCats;
+          });
+          setMessages(prev => [...prev, { role: 'cat', text: `Meow! You reached a milestone! A new cat has been added to your library! Purr-fect!` }]);
+        }
 
         // If we completed the last available level, generate more
         if (currentOrder === prevLevels.length - 1) {
@@ -785,77 +849,155 @@ export default function App() {
                 <p className="font-pixel text-[6px] text-retro-primary opacity-60">CLIMB THE ENDLESS PATH OF KNOWLEDGE</p>
               </div>
               
-              <div className="flex-1 bg-retro-surface pixel-border overflow-y-auto overflow-x-hidden relative scrollbar-hide p-8">
+              <div className="flex-1 bg-[#4ade80]/20 relative overflow-y-auto overflow-x-hidden scrollbar-hide p-8 rounded-3xl">
+                {/* Meadow Decorations */}
+                <div className="absolute inset-0 pointer-events-none">
+                  {Array.from({ length: 20 }).map((_, i) => (
+                    <motion.div
+                      key={i}
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: [0.2, 0.5, 0.2] }}
+                      transition={{ duration: 2 + Math.random() * 2, repeat: Infinity }}
+                      className="absolute text-[10px]"
+                      style={{ 
+                        left: `${Math.random() * 100}%`, 
+                        top: `${Math.random() * 2000}px` 
+                      }}
+                    >
+                      {['🌱', '🌸', '🌼', '🍀'][Math.floor(Math.random() * 4)]}
+                    </motion.div>
+                  ))}
+                </div>
+
                 {/* The Path */}
                 <div className="relative min-h-[2000px] w-full flex flex-col items-center py-20">
                   <svg className="absolute inset-0 w-full h-full pointer-events-none" preserveAspectRatio="none">
                     <path
                       d={levels.map((l, i) => {
                         const x = 50 + Math.sin(i * 0.8) * 30;
-                        const y = i * 150 + 100;
+                        const y = i * 200 + 100;
                         return `${i === 0 ? 'M' : 'L'} ${x}% ${y}`;
                       }).join(' ')}
                       fill="none"
-                      stroke="var(--retro-primary)"
+                      stroke="#166534"
                       strokeWidth="4"
                       strokeDasharray="8 8"
-                      className="opacity-20"
+                      className="opacity-30"
                     />
                   </svg>
 
-                  {levels.map((level, i) => {
-                    const xOffset = Math.sin(i * 0.8) * 30;
+                  {/* Walking Cat on Map */}
+                  {(() => {
+                    const currentLvlIdx = levels.findIndex(l => l.status === 'current');
+                    const targetLvl = levels[currentLvlIdx] || levels[0];
+                    const xOffset = Math.sin(currentLvlIdx * 0.8) * 30;
+                    const yPos = currentLvlIdx * 200 + 100;
+
                     return (
                       <motion.div
-                        key={level.id}
-                        initial={{ scale: 0, opacity: 0 }}
-                        whileInView={{ scale: 1, opacity: 1 }}
-                        viewport={{ once: true }}
-                        style={{ 
-                          marginLeft: `${xOffset}%`,
-                          marginTop: i === 0 ? 0 : 100
+                        animate={{ 
+                          x: xOffset * 2, // Scale offset for visual better placement
+                          y: yPos - 60
                         }}
-                        className="relative z-10"
+                        transition={{ type: 'spring', stiffness: 50 }}
+                        className="absolute z-30 pointer-events-none"
                       >
-                        <div className="relative group/node">
-                          <button
-                            onClick={() => startLevel(level)}
-                            disabled={level.status === 'locked'}
-                            className={`w-16 h-16 pixel-border flex flex-col items-center justify-center transition-all relative ${
-                              level.status === 'completed' ? 'bg-green-500 border-green-700' :
-                              level.status === 'current' ? 'bg-retro-primary border-rose-700 animate-bounce' :
-                              'bg-retro-surface border-retro-border grayscale cursor-not-allowed'
-                            } hover:scale-110 active:scale-95 shadow-lg`}
-                          >
-                            {level.status === 'locked' ? (
-                              <Lock size={20} className="text-retro-border" />
-                            ) : (
-                              <>
-                                <span className="font-pixel text-[12px] text-white drop-shadow-md">{i + 1}</span>
-                                <div className="absolute -bottom-6 whitespace-nowrap">
-                                  <span className="font-pixel text-[6px] text-retro-accent uppercase">{level.title}</span>
-                                </div>
-                              </>
-                            )}
-                          </button>
-
-                          {/* Level Info Tooltip */}
-                          <div className="absolute left-full ml-4 top-1/2 -translate-y-1/2 opacity-0 group-hover/node:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-30">
-                            <div className="bg-retro-surface pixel-border p-3 shadow-xl max-w-[150px]">
-                              <p className="font-pixel text-[8px] text-retro-accent mb-1">{level.title}</p>
-                              <p className="font-pixel text-[6px] text-retro-primary uppercase leading-tight">{level.description}</p>
-                              {level.status === 'completed' && (
-                                <div className="mt-2 flex items-center gap-1 text-green-500">
-                                  <CheckCircle2 size={10} />
-                                  <span className="font-pixel text-[5px]">MASTERED</span>
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                        </div>
+                        <PixelCat animated={true} className="scale-50" />
                       </motion.div>
                     );
-                  }).reverse()} {/* Reverse to show progress from bottom to top */}
+                  })()}
+
+                  {levels.map((level, i) => {
+                    const xOffset = Math.sin(i * 0.8) * 30;
+                    const isMilestone = (i + 1) % 5 === 0;
+                    const milestoneCat = isMilestone ? mapCats[Math.floor(i / 5) % mapCats.length] : null;
+
+                    return (
+                      <div key={level.id} className="relative w-full flex flex-col items-center">
+                        {/* Milestone Background Cat */}
+                        {isMilestone && milestoneCat && (
+                          <motion.div 
+                            initial={{ opacity: 0, scale: 0.5 }}
+                            whileInView={{ opacity: 0.25, scale: 1 }}
+                            className="absolute -z-10 w-48 h-48 overflow-hidden grayscale-0 opacity-30"
+                            style={{ 
+                              left: i % 2 === 0 ? '5%' : '65%',
+                              top: '50%',
+                              transform: 'translateY(-50%)'
+                            }}
+                          >
+                            <img 
+                              src={milestoneCat.imageUrl} 
+                              alt="milestone" 
+                              className="w-full h-full object-cover pixel-border"
+                              referrerPolicy="no-referrer"
+                              onError={(e) => {
+                                // Fallback if image fails
+                                (e.target as HTMLImageElement).src = 'https://picsum.photos/seed/cat/200/200';
+                              }}
+                            />
+                            <div className="absolute inset-0 flex items-end justify-center pb-2 bg-gradient-to-t from-black/40 to-transparent">
+                              <span className="font-pixel text-[8px] text-white uppercase">{milestoneCat.name}</span>
+                            </div>
+                          </motion.div>
+                        )}
+
+                        <motion.div
+                          initial={{ scale: 0, opacity: 0 }}
+                          whileInView={{ scale: 1, opacity: 1 }}
+                          viewport={{ once: true }}
+                          style={{ 
+                            marginLeft: `${xOffset}%`,
+                            marginTop: i === 0 ? 0 : 150
+                          }}
+                          className="relative z-10"
+                        >
+                          <div className="relative group/node">
+                            <button
+                              onClick={() => startLevel(level)}
+                              disabled={level.status === 'locked'}
+                              className={`w-16 h-16 pixel-border flex flex-col items-center justify-center transition-all relative ${
+                                level.status === 'completed' ? 'bg-green-500 border-green-700' :
+                                level.status === 'current' ? 'bg-retro-primary border-rose-700 animate-bounce' :
+                                'bg-retro-surface border-retro-border grayscale cursor-not-allowed'
+                              } hover:scale-110 active:scale-95 shadow-lg`}
+                            >
+                              {level.status === 'locked' ? (
+                                <Lock size={20} className="text-retro-border" />
+                              ) : (
+                                <>
+                                  <span className="font-pixel text-[12px] text-white drop-shadow-md">{i + 1}</span>
+                                  <div className="absolute -bottom-6 whitespace-nowrap">
+                                    <span className="font-pixel text-[6px] text-retro-accent uppercase">{level.title}</span>
+                                  </div>
+                                  {isMilestone && (
+                                    <div className="absolute -top-2 -right-2 bg-yellow-400 p-1 pixel-border animate-pulse">
+                                      <Sparkles size={10} className="text-white" />
+                                    </div>
+                                  )}
+                                </>
+                              )}
+                            </button>
+
+                            {/* Level Info Tooltip */}
+                            <div className="absolute left-full ml-4 top-1/2 -translate-y-1/2 opacity-0 group-hover/node:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-30">
+                              <div className="bg-retro-surface pixel-border p-3 shadow-xl max-w-[150px]">
+                                <p className="font-pixel text-[8px] text-retro-accent mb-1">{level.title}</p>
+                                <p className="font-pixel text-[6px] text-retro-primary uppercase leading-tight">{level.description}</p>
+                                {isMilestone && <p className="font-pixel text-[5px] text-yellow-500 mt-1">✨ CAT UNLOCK MILESTONE ✨</p>}
+                                {level.status === 'completed' && (
+                                  <div className="mt-2 flex items-center gap-1 text-green-500">
+                                    <CheckCircle2 size={10} />
+                                    <span className="font-pixel text-[5px]">MASTERED</span>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        </motion.div>
+                      </div>
+                    );
+                  }).reverse()}
                 </div>
               </div>
 
