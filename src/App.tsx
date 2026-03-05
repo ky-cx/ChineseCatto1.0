@@ -137,6 +137,10 @@ const PixelCat = ({ className = "", animated = true }: { className?: string; ani
 export default function App() {
   const [currentView, setCurrentView] = useState<View>('home');
   const [homeSubView, setHomeSubView] = useState<HomeSubView>('chat');
+  const [showLanding, setShowLanding] = useState(true);
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [isRegistering, setIsRegistering] = useState(true);
   const [theme, setTheme] = useState<Theme>('dark');
   const [selectedLevel, setSelectedLevel] = useState<Level | null>(null);
   const [levelProgress, setLevelProgress] = useState(0);
@@ -364,11 +368,11 @@ export default function App() {
   const toggleTimer = () => {
     if (isTimerRunning) {
       // Stop timer and award coins
-      const minutes = Math.floor(timerSeconds / 60);
-      const coinsEarned = minutes * 10; // 10 coins per minute
+      const minutes = timerSeconds / 60;
+      const coinsEarned = Math.floor(minutes * 20); // Increased to 20 coins per minute for better value
       if (coinsEarned > 0) {
         setCatCoins(prev => prev + coinsEarned);
-        setMessages(prev => [...prev, { role: 'cat', text: `Meow! You studied for ${minutes} minutes and earned ${coinsEarned} Cat Coins! Purr-fect!` }]);
+        setMessages(prev => [...prev, { role: 'cat', text: `Meow! You studied for ${Math.floor(minutes)}m ${timerSeconds % 60}s and earned ${coinsEarned} Cat Coins! You're getting rich, purr!` }]);
       }
       setIsTimerRunning(false);
       setTimerSeconds(0);
@@ -490,6 +494,7 @@ export default function App() {
   const handleLogout = async () => {
     await fetch('/api/auth/logout', { method: 'POST' });
     setUser(null);
+    setShowLanding(true);
     fetchWords();
   };
 
@@ -581,10 +586,137 @@ export default function App() {
     }
   };
 
+  const handleEmailAuth = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email || !password) return;
+    
+    // Mock authentication for now as requested by UI-first approach
+    // In a real app, this would call /api/auth/register or login
+    const mockUser: User = {
+      id: crypto.randomUUID(),
+      github_id: 0,
+      username: email.split('@')[0],
+      avatar_url: `https://api.dicebear.com/7.x/pixel-art/svg?seed=${email}`
+    };
+    
+    setUser(mockUser);
+    setShowLanding(false);
+    setMessages(prev => [...prev, { role: 'cat', text: `Meow! Welcome ${mockUser.username}! I'm so happy you registered. Let's start learning!` }]);
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-retro-bg">
         <div className="font-pixel text-retro-accent animate-pulse">LOADING SYSTEM...</div>
+      </div>
+    );
+  }
+
+  if (!user && showLanding) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-retro-bg p-4 relative overflow-hidden">
+        <div className="crt-overlay" />
+        
+        {/* Animated Background Elements */}
+        <div className="absolute inset-0 pointer-events-none opacity-20">
+          {Array.from({ length: 15 }).map((_, i) => (
+            <motion.div
+              key={i}
+              animate={{ 
+                y: [0, -1000],
+                opacity: [0, 1, 0]
+              }}
+              transition={{ 
+                duration: 5 + Math.random() * 5, 
+                repeat: Infinity,
+                delay: Math.random() * 5
+              }}
+              className="absolute text-2xl"
+              style={{ left: `${Math.random() * 100}%`, bottom: '-50px' }}
+            >
+              {['🌸', '⭐', '☁️', '🐾'][Math.floor(Math.random() * 4)]}
+            </motion.div>
+          ))}
+        </div>
+
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="max-w-md w-full bg-retro-surface pixel-border p-8 relative z-10 shadow-2xl"
+        >
+          <div className="text-center mb-8">
+            <motion.div
+              animate={{ y: [0, -10, 0] }}
+              transition={{ duration: 2, repeat: Infinity }}
+              className="inline-block mb-4"
+            >
+              <PixelCat animated={true} />
+            </motion.div>
+            <h1 className="font-pixel text-2xl text-retro-accent mb-2">CHINESECATTO</h1>
+            <p className="font-pixel text-[8px] text-retro-primary uppercase tracking-widest">Your Infinite Journey Starts Here</p>
+          </div>
+
+          <form onSubmit={handleEmailAuth} className="space-y-6">
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <label className="block font-pixel text-[8px] text-retro-primary uppercase">Email Address</label>
+                <input 
+                  type="email" 
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="catto@example.com"
+                  className="w-full pixel-input text-sm"
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="block font-pixel text-[8px] text-retro-primary uppercase">Password</label>
+                <input 
+                  type="password" 
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="••••••••"
+                  className="w-full pixel-input text-sm"
+                  required
+                />
+              </div>
+            </div>
+
+            <button 
+              type="submit"
+              className="w-full pixel-button py-3 flex items-center justify-center gap-2 group"
+            >
+              <Sparkles size={16} className="group-hover:animate-spin" />
+              <span className="font-pixel text-[10px]">{isRegistering ? 'CREATE ACCOUNT' : 'SIGN IN'}</span>
+            </button>
+          </form>
+
+          <div className="mt-6 flex flex-col gap-4">
+            <button 
+              onClick={() => setIsRegistering(!isRegistering)}
+              className="font-pixel text-[8px] text-retro-primary hover:text-retro-accent transition-colors underline"
+            >
+              {isRegistering ? 'ALREADY HAVE AN ACCOUNT? SIGN IN' : 'NEED AN ACCOUNT? REGISTER'}
+            </button>
+            
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-retro-border"></div></div>
+              <div className="relative flex justify-center text-[8px] uppercase"><span className="bg-retro-surface px-2 text-retro-border font-pixel">Or continue with</span></div>
+            </div>
+
+            <button 
+              onClick={handleLogin}
+              className="w-full bg-retro-bg pixel-border py-2 flex items-center justify-center gap-2 hover:bg-retro-surface transition-colors"
+            >
+              <Github size={14} className="text-retro-primary" />
+              <span className="font-pixel text-[8px] text-retro-primary">GITHUB_OAUTH</span>
+            </button>
+          </div>
+
+          <p className="mt-8 text-center font-pixel text-[6px] text-retro-border uppercase">
+            By joining, you agree to our pixel-perfect terms.
+          </p>
+        </motion.div>
       </div>
     );
   }
@@ -621,12 +753,21 @@ export default function App() {
                 <span className="font-pixel text-[6px] text-retro-accent uppercase">{user.username}</span>
               </div>
             ) : (
-              <button 
-                onClick={handleLogin}
-                className="font-pixel text-[8px] text-retro-primary hover:text-retro-accent transition-colors"
-              >
-                [ CONNECT_GITHUB ]
-              </button>
+              <div className="flex items-center gap-2">
+                <button 
+                  onClick={handleLogin}
+                  className="font-pixel text-[8px] text-retro-primary hover:text-retro-accent transition-colors"
+                >
+                  [ LOGIN ]
+                </button>
+                <span className="text-retro-border text-[8px]">|</span>
+                <button 
+                  onClick={handleLogin}
+                  className="font-pixel text-[8px] text-retro-primary hover:text-retro-accent transition-colors"
+                >
+                  [ REGISTER ]
+                </button>
+              </div>
             )}
           </div>
         </div>
