@@ -35,6 +35,7 @@ interface Level {
   title: string;
   description: string;
   status: 'locked' | 'current' | 'completed';
+  animalType: string;
   content: { char: string; pinyin: string; meaning: string }[];
   order: number;
 }
@@ -49,6 +50,8 @@ interface User {
   github_id: number;
   username: string;
   avatar_url: string;
+  cat_coins?: number;
+  inventory?: string;
 }
 
 interface Word {
@@ -59,7 +62,119 @@ interface Word {
   createdAt: number;
 }
 
+const PixelAnimalHouse = ({ type, color, status, className = "" }: { type: string; color: string; status: string; className?: string }) => {
+  const isLocked = status === 'locked';
+  const fillColor = isLocked ? '#9ca3af' : color;
+  
+  return (
+    <div className={`relative ${className}`}>
+      <svg width="64" height="64" viewBox="0 0 64 64" className="drop-shadow-md">
+        {/* House Base */}
+        <rect x="12" y="28" width="40" height="32" fill={fillColor} />
+        {/* Roof */}
+        <path d="M8 32 L32 8 L56 32" stroke={isLocked ? '#4b5563' : 'white'} strokeWidth="4" fill="none" />
+        
+        {/* Animal Features */}
+        {type === 'cat' && (
+          <g>
+            <rect x="16" y="16" width="12" height="12" fill={fillColor} /> {/* Left Ear */}
+            <rect x="36" y="16" width="12" height="12" fill={fillColor} /> {/* Right Ear */}
+            <rect x="22" y="40" width="4" height="4" fill="white" /> {/* Eye L */}
+            <rect x="38" y="40" width="4" height="4" fill="white" /> {/* Eye R */}
+            <rect x="30" y="46" width="4" height="2" fill="#f472b6" /> {/* Nose */}
+            {/* Whiskers */}
+            <rect x="14" y="46" width="6" height="1" fill="white" opacity="0.5" />
+            <rect x="14" y="50" width="6" height="1" fill="white" opacity="0.5" />
+            <rect x="44" y="46" width="6" height="1" fill="white" opacity="0.5" />
+            <rect x="44" y="50" width="6" height="1" fill="white" opacity="0.5" />
+          </g>
+        )}
+        {type === 'dog' && (
+          <g>
+            <rect x="8" y="24" width="8" height="16" fill={fillColor} /> {/* Ear L */}
+            <rect x="48" y="24" width="8" height="16" fill={fillColor} /> {/* Ear R */}
+            <rect x="22" y="40" width="4" height="4" fill="white" /> {/* Eye L */}
+            <rect x="38" y="40" width="4" height="4" fill="white" /> {/* Eye R */}
+            <rect x="28" y="44" width="8" height="6" fill="#1f2937" /> {/* Muzzle */}
+            <rect x="31" y="45" width="2" height="2" fill="black" /> {/* Nose */}
+          </g>
+        )}
+        {type === 'rabbit' && (
+          <g>
+            <rect x="18" y="4" width="8" height="24" fill={fillColor} /> {/* Ear L */}
+            <rect x="38" y="4" width="8" height="24" fill={fillColor} /> {/* Ear R */}
+            <rect x="20" y="8" width="4" height="16" fill="#fbcfe8" opacity="0.5" /> {/* Inner Ear L */}
+            <rect x="40" y="8" width="4" height="16" fill="#fbcfe8" opacity="0.5" /> {/* Inner Ear R */}
+            <rect x="22" y="40" width="4" height="4" fill="white" /> {/* Eye L */}
+            <rect x="38" y="40" width="4" height="4" fill="white" /> {/* Eye R */}
+            <rect x="30" y="46" width="4" height="4" fill="#f472b6" /> {/* Nose */}
+          </g>
+        )}
+        {type === 'panda' && (
+          <g>
+            <rect x="12" y="18" width="12" height="12" fill="#1f2937" /> {/* Ear L */}
+            <rect x="40" y="18" width="12" height="12" fill="#1f2937" /> {/* Ear R */}
+            <rect x="18" y="36" width="12" height="12" fill="#1f2937" /> {/* Eye Patch L */}
+            <rect x="34" y="36" width="12" height="12" fill="#1f2937" /> {/* Eye Patch R */}
+            <rect x="22" y="40" width="4" height="4" fill="white" /> {/* Eye L */}
+            <rect x="38" y="40" width="4" height="4" fill="white" /> {/* Eye R */}
+            <rect x="30" y="48" width="4" height="2" fill="black" /> {/* Nose */}
+          </g>
+        )}
+        {type === 'fox' && (
+          <g>
+            <rect x="12" y="16" width="12" height="12" fill={fillColor} /> {/* Ear L */}
+            <rect x="40" y="16" width="12" height="12" fill={fillColor} /> {/* Ear R */}
+            <rect x="14" y="18" width="8" height="8" fill="white" opacity="0.3" /> {/* Inner Ear L */}
+            <rect x="42" y="18" width="8" height="8" fill="white" opacity="0.3" /> {/* Inner Ear R */}
+            <rect x="12" y="48" width="40" height="12" fill="white" opacity="0.5" /> {/* White Muzzle Area */}
+            <rect x="22" y="40" width="4" height="4" fill="white" /> {/* Eye L */}
+            <rect x="38" y="40" width="4" height="4" fill="white" /> {/* Eye R */}
+            <rect x="30" y="46" width="4" height="4" fill="#1f2937" /> {/* Nose */}
+          </g>
+        )}
+        {type === 'bear' && (
+          <g>
+            <rect x="14" y="20" width="10" height="10" fill={fillColor} /> {/* Ear L */}
+            <rect x="40" y="20" width="10" height="10" fill={fillColor} /> {/* Ear R */}
+            <rect x="22" y="40" width="4" height="4" fill="white" /> {/* Eye L */}
+            <rect x="38" y="40" width="4" height="4" fill="white" /> {/* Eye R */}
+            <rect x="26" y="46" width="12" height="10" fill="white" opacity="0.3" /> {/* Muzzle */}
+            <rect x="30" y="48" width="4" height="2" fill="black" /> {/* Nose */}
+          </g>
+        )}
+        {type === 'frog' && (
+          <g>
+            <rect x="14" y="20" width="12" height="12" fill={fillColor} /> {/* Eye Bump L */}
+            <rect x="38" y="20" width="12" height="12" fill={fillColor} /> {/* Eye Bump R */}
+            <rect x="18" y="24" width="4" height="4" fill="white" /> {/* Eye L */}
+            <rect x="42" y="24" width="4" height="4" fill="white" /> {/* Eye R */}
+            <rect x="20" y="48" width="24" height="2" fill="#166534" /> {/* Mouth */}
+            <rect x="16" y="44" width="6" height="4" fill="#f472b6" opacity="0.4" /> {/* Cheek L */}
+            <rect x="42" y="44" width="6" height="4" fill="#f472b6" opacity="0.4" /> {/* Cheek R */}
+          </g>
+        )}
+        {type === 'pig' && (
+          <g>
+            <rect x="12" y="24" width="8" height="8" fill={fillColor} /> {/* Ear L */}
+            <rect x="44" y="24" width="8" height="8" fill={fillColor} /> {/* Ear R */}
+            <rect x="22" y="40" width="4" height="4" fill="white" /> {/* Eye L */}
+            <rect x="38" y="40" width="4" height="4" fill="white" /> {/* Eye R */}
+            <rect x="26" y="46" width="12" height="8" fill="#f472b6" /> {/* Snout */}
+            <rect x="29" y="49" width="2" height="2" fill="#be185d" /> {/* Nostril L */}
+            <rect x="33" y="49" width="2" height="2" fill="#be185d" /> {/* Nostril R */}
+          </g>
+        )}
+        
+        {/* Door */}
+        <rect x="28" y="48" width="8" height="12" fill="rgba(0,0,0,0.2)" />
+      </svg>
+    </div>
+  );
+};
+
 const PixelCat = ({ className = "", animated = true }: { className?: string; animated?: boolean }) => (
+
   <motion.div
     animate={animated ? {
       y: [0, -4, 0],
@@ -134,6 +249,16 @@ const PixelCat = ({ className = "", animated = true }: { className?: string; ani
   </motion.div>
 );
 
+const TOPICS = [
+  { title: 'Numbers', desc: '1-10', content: [{ char: '一', pinyin: 'yī', meaning: '1' }, { char: '二', pinyin: 'èr', meaning: '2' }, { char: '三', pinyin: 'sān', meaning: '3' }, { char: '四', pinyin: 'sì', meaning: '4' }, { char: '五', pinyin: 'wǔ', meaning: '5' }, { char: '六', pinyin: 'liù', meaning: '6' }, { char: '七', pinyin: 'qī', meaning: '7' }, { char: '八', pinyin: 'bā', meaning: '8' }, { char: '九', pinyin: 'jiǔ', meaning: '9' }, { char: '十', pinyin: 'shí', meaning: '10' }] },
+  { title: 'Greetings', desc: 'Basic hellos', content: [{ char: '你好', pinyin: 'nǐ hǎo', meaning: 'Hello' }, { char: '谢谢', pinyin: 'xièxie', meaning: 'Thank you' }, { char: '不客气', pinyin: 'bú kèqi', meaning: "You're welcome" }, { char: '再见', pinyin: 'zàijiàn', meaning: 'Goodbye' }] },
+  { title: 'Family', desc: 'Mom and Dad', content: [{ char: '爸爸', pinyin: 'bàba', meaning: 'Dad' }, { char: '妈妈', pinyin: 'māma', meaning: 'Mom' }, { char: '哥哥', pinyin: 'gēge', meaning: 'Older Brother' }, { char: '姐姐', pinyin: 'jiějie', meaning: 'Older Sister' }] },
+  { title: 'Food', desc: 'Common dishes', content: [{ char: '米饭', pinyin: 'mǐfàn', meaning: 'Rice' }, { char: '面条', pinyin: 'miàntiáo', meaning: 'Noodles' }, { char: '水', pinyin: 'shuǐ', meaning: 'Water' }, { char: '茶', pinyin: 'chá', meaning: 'Tea' }] },
+  { title: 'Animals', desc: 'Pets and more', content: [{ char: '猫', pinyin: 'māo', meaning: 'Cat' }, { char: '狗', pinyin: 'gǒu', meaning: 'Dog' }, { char: '鸟', pinyin: 'niǎo', meaning: 'Bird' }, { char: '鱼', pinyin: 'yú', meaning: 'Fish' }] },
+  { title: 'Colors', desc: 'Rainbow colors', content: [{ char: '红', pinyin: 'hóng', meaning: 'Red' }, { char: '蓝', pinyin: 'lán', meaning: 'Blue' }, { char: '绿', pinyin: 'lǜ', meaning: 'Green' }, { char: '黄', pinyin: 'huáng', meaning: 'Yellow' }] },
+  { title: 'Nature', desc: 'Sun and Moon', content: [{ char: '日', pinyin: 'rì', meaning: 'Sun' }, { char: '月', pinyin: 'yuè', meaning: 'Moon' }, { char: '山', pinyin: 'shān', meaning: 'Mountain' }, { char: '水', pinyin: 'shuǐ', meaning: 'Water' }] },
+];
+
 export default function App() {
   const [currentView, setCurrentView] = useState<View>('home');
   const [homeSubView, setHomeSubView] = useState<HomeSubView>('chat');
@@ -155,67 +280,121 @@ export default function App() {
   const [pinyin, setPinyin] = useState('');
   const [meaning, setMeaning] = useState('');
   const [loading, setLoading] = useState(true);
-  const [mapCats, setMapCats] = useState<MapCat[]>([
-    {
-      id: 'cat-1',
-      name: 'Classic Ginger',
-      imageUrl: 'https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?auto=format&fit=crop&w=1000&q=80',
-      unlocked: true,
-      rarity: 'Common',
-      description: 'A friendly ginger cat that loves sunshine.'
-    },
-    {
-      id: 'cat-2',
-      name: 'Midnight Shadow',
-      imageUrl: 'https://images.unsplash.com/photo-1548247416-ec66f4900b2e?auto=format&fit=crop&w=1000&q=80',
-      unlocked: false,
-      rarity: 'Rare',
-      description: 'A mysterious black cat that disappears in the night.'
-    },
-    {
-      id: 'cat-3',
-      name: 'Snowball',
-      imageUrl: 'https://images.unsplash.com/photo-1573865668131-973177e81a4e?auto=format&fit=crop&w=1000&q=80',
-      unlocked: false,
-      rarity: 'Legendary',
-      description: 'A fluffy white cat as soft as a cloud.'
-    },
-    {
-      id: 'cat-4',
-      name: 'Sakura Neko',
-      imageUrl: 'https://images.unsplash.com/photo-1519052537078-e6302a4968d4?auto=format&fit=crop&w=1000&q=80',
-      unlocked: false,
-      rarity: 'Rare',
-      description: 'A cat that loves cherry blossoms.'
-    },
-    {
-      id: 'cat-5',
-      name: 'Calico Dream',
-      imageUrl: 'https://images.unsplash.com/photo-1533733358354-2e1603f7a203?auto=format&fit=crop&w=1000&q=80',
-      unlocked: false,
-      rarity: 'Common',
-      description: 'A colorful cat with a playful spirit.'
-    },
-    {
-      id: 'cat-6',
-      name: 'Tuxedo Gent',
-      imageUrl: 'https://images.unsplash.com/photo-1513245543132-31f507417b26?auto=format&fit=crop&w=1000&q=80',
-      unlocked: false,
-      rarity: 'Rare',
-      description: 'Always dressed for a fancy occasion.'
-    },
-    {
-      id: 'cat-7',
-      name: 'Azure Guardian',
-      imageUrl: 'https://images.unsplash.com/photo-1574158622682-e40e69881006?auto=format&fit=crop&w=1000&q=80',
-      unlocked: false,
-      rarity: 'Legendary',
-      description: 'A mystical blue cat with shimmering wings that protects the ancient scrolls.'
+  const generateLevel = (index: number): Level => {
+    const topic = TOPICS[index % TOPICS.length];
+    const animalTypes = ['cat', 'dog', 'rabbit', 'panda', 'fox', 'bear', 'frog', 'pig'];
+    return {
+      id: `level-${index + 1}`,
+      title: `${topic.title} ${Math.floor(index / TOPICS.length) + 1}`,
+      description: topic.desc,
+      status: index === 0 ? 'current' : 'locked',
+      animalType: animalTypes[index % animalTypes.length],
+      content: topic.content,
+      order: index
+    };
+  };
+
+  const [levels, setLevels] = useState<Level[]>(() => {
+    const saved = localStorage.getItem('catto-levels');
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch (e) {
+        console.error('Failed to parse levels', e);
+      }
     }
-  ]);
-  const [activeCatIndex, setActiveCatIndex] = useState(0);
-  const [catCoins, setCatCoins] = useState(0);
-  const [inventory, setInventory] = useState<InventoryItem[]>([]);
+    const initialLevels = [];
+    for (let i = 0; i < 10; i++) {
+      initialLevels.push(generateLevel(i));
+    }
+    return initialLevels;
+  });
+
+  const [mapCats, setMapCats] = useState<MapCat[]>(() => {
+    const saved = localStorage.getItem('catto-cats');
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch (e) {
+        console.error('Failed to parse cats', e);
+      }
+    }
+    return [
+      {
+        id: 'cat-1',
+        name: 'Classic Ginger',
+        imageUrl: 'https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?auto=format&fit=crop&w=1000&q=80',
+        unlocked: true,
+        rarity: 'Common',
+        description: 'A friendly ginger cat that loves sunshine.'
+      },
+      {
+        id: 'cat-2',
+        name: 'Midnight Shadow',
+        imageUrl: 'https://images.unsplash.com/photo-1548247416-ec66f4900b2e?auto=format&fit=crop&w=1000&q=80',
+        unlocked: false,
+        rarity: 'Rare',
+        description: 'A mysterious black cat that disappears in the night.'
+      },
+      {
+        id: 'cat-3',
+        name: 'Snowball',
+        imageUrl: 'https://images.unsplash.com/photo-1573865668131-973177e81a4e?auto=format&fit=crop&w=1000&q=80',
+        unlocked: false,
+        rarity: 'Legendary',
+        description: 'A fluffy white cat as soft as a cloud.'
+      },
+      {
+        id: 'cat-4',
+        name: 'Sakura Neko',
+        imageUrl: 'https://images.unsplash.com/photo-1519052537078-e6302a4968d4?auto=format&fit=crop&w=1000&q=80',
+        unlocked: false,
+        rarity: 'Rare',
+        description: 'A cat that loves cherry blossoms.'
+      },
+      {
+        id: 'cat-5',
+        name: 'Calico Dream',
+        imageUrl: 'https://images.unsplash.com/photo-1533733358354-2e1603f7a203?auto=format&fit=crop&w=1000&q=80',
+        unlocked: false,
+        rarity: 'Common',
+        description: 'A colorful cat with a playful spirit.'
+      },
+      {
+        id: 'cat-6',
+        name: 'Tuxedo Gent',
+        imageUrl: 'https://images.unsplash.com/photo-1513245543132-31f507417b26?auto=format&fit=crop&w=1000&q=80',
+        unlocked: false,
+        rarity: 'Rare',
+        description: 'Always dressed for a fancy occasion.'
+      },
+      {
+        id: 'cat-7',
+        name: 'Azure Guardian',
+        imageUrl: 'https://images.unsplash.com/photo-1574158622682-e40e69881006?auto=format&fit=crop&w=1000&q=80',
+        unlocked: false,
+        rarity: 'Legendary',
+        description: 'A mystical blue cat with shimmering wings that protects the ancient scrolls.'
+      }
+    ];
+  });
+
+  const [activeCatIndex, setActiveCatIndex] = useState<number>(() => {
+    const saved = localStorage.getItem('catto-active-cat');
+    return saved ? parseInt(saved) : 0;
+  });
+  const [catCoins, setCatCoins] = useState<number>(() => {
+    const saved = localStorage.getItem('catto-coins');
+    return saved ? parseInt(saved) : 0;
+  });
+  const [inventory, setInventory] = useState<InventoryItem[]>(() => {
+    const saved = localStorage.getItem('catto-inventory');
+    try {
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
   const [isTimerRunning, setIsTimerRunning] = useState(false);
   const [timerSeconds, setTimerSeconds] = useState(0);
 
@@ -230,8 +409,24 @@ export default function App() {
   const fetchUser = useCallback(async () => {
     try {
       const res = await fetch('/api/auth/me');
+      if (!res.ok) return;
+      const contentType = res.headers.get('content-type');
+      if (!contentType || !contentType.includes('application/json')) return;
+      
       const data = await res.json();
-      setUser(data.user);
+      if (data.user) {
+        setUser(data.user);
+        // Sync coins and inventory from DB
+        setCatCoins(prev => Math.max(prev, data.user.cat_coins || 0));
+        if (data.user.inventory) {
+          try {
+            const dbInv = JSON.parse(data.user.inventory);
+            setInventory(prev => dbInv.length > prev.length ? dbInv : prev);
+          } catch (e) {
+            console.error('Failed to parse DB inventory', e);
+          }
+        }
+      }
     } catch (e) {
       console.error('Failed to fetch user', e);
     } finally {
@@ -257,8 +452,11 @@ export default function App() {
     try {
       const res = await fetch('/api/words');
       if (res.ok) {
-        const data = await res.json();
-        setWords(data);
+        const contentType = res.headers.get('content-type');
+        if (contentType && contentType.includes('application/json')) {
+          const data = await res.json();
+          setWords(data);
+        }
       }
     } catch (e) {
       console.error('Failed to fetch words from API', e);
@@ -283,76 +481,22 @@ export default function App() {
     localStorage.setItem('catto-theme', theme);
   }, [theme]);
 
-  const TOPICS = [
-    { title: 'Numbers', desc: '1-10', content: [{ char: '一', pinyin: 'yī', meaning: '1' }, { char: '二', pinyin: 'èr', meaning: '2' }, { char: '三', pinyin: 'sān', meaning: '3' }, { char: '四', pinyin: 'sì', meaning: '4' }, { char: '五', pinyin: 'wǔ', meaning: '5' }, { char: '六', pinyin: 'liù', meaning: '6' }, { char: '七', pinyin: 'qī', meaning: '7' }, { char: '八', pinyin: 'bā', meaning: '8' }, { char: '九', pinyin: 'jiǔ', meaning: '9' }, { char: '十', pinyin: 'shí', meaning: '10' }] },
-    { title: 'Greetings', desc: 'Basic hellos', content: [{ char: '你好', pinyin: 'nǐ hǎo', meaning: 'Hello' }, { char: '谢谢', pinyin: 'xièxie', meaning: 'Thank you' }, { char: '不客气', pinyin: 'bú kèqi', meaning: "You're welcome" }, { char: '再见', pinyin: 'zàijiàn', meaning: 'Goodbye' }] },
-    { title: 'Family', desc: 'Mom and Dad', content: [{ char: '爸爸', pinyin: 'bàba', meaning: 'Dad' }, { char: '妈妈', pinyin: 'māma', meaning: 'Mom' }, { char: '哥哥', pinyin: 'gēge', meaning: 'Older Brother' }, { char: '姐姐', pinyin: 'jiějie', meaning: 'Older Sister' }] },
-    { title: 'Food', desc: 'Common dishes', content: [{ char: '米饭', pinyin: 'mǐfàn', meaning: 'Rice' }, { char: '面条', pinyin: 'miàntiáo', meaning: 'Noodles' }, { char: '水', pinyin: 'shuǐ', meaning: 'Water' }, { char: '茶', pinyin: 'chá', meaning: 'Tea' }] },
-    { title: 'Animals', desc: 'Pets and more', content: [{ char: '猫', pinyin: 'māo', meaning: 'Cat' }, { char: '狗', pinyin: 'gǒu', meaning: 'Dog' }, { char: '鸟', pinyin: 'niǎo', meaning: 'Bird' }, { char: '鱼', pinyin: 'yú', meaning: 'Fish' }] },
-    { title: 'Colors', desc: 'Rainbow colors', content: [{ char: '红', pinyin: 'hóng', meaning: 'Red' }, { char: '蓝', pinyin: 'lán', meaning: 'Blue' }, { char: '绿', pinyin: 'lǜ', meaning: 'Green' }, { char: '黄', pinyin: 'huáng', meaning: 'Yellow' }] },
-    { title: 'Nature', desc: 'Sun and Moon', content: [{ char: '日', pinyin: 'rì', meaning: 'Sun' }, { char: '月', pinyin: 'yuè', meaning: 'Moon' }, { char: '山', pinyin: 'shān', meaning: 'Mountain' }, { char: '水', pinyin: 'shuǐ', meaning: 'Water' }] },
-  ];
-
-  const generateLevel = (index: number): Level => {
-    const topic = TOPICS[index % TOPICS.length];
-    return {
-      id: `level-${index + 1}`,
-      title: `${topic.title} ${Math.floor(index / TOPICS.length) + 1}`,
-      description: topic.desc,
-      status: index === 0 ? 'current' : 'locked',
-      content: topic.content,
-      order: index
-    };
-  };
-
-  const [levels, setLevels] = useState<Level[]>(() => {
-    const initialLevels = [];
-    for (let i = 0; i < 10; i++) {
-      initialLevels.push(generateLevel(i));
-    }
-    return initialLevels;
-  });
-
-  useEffect(() => {
-    const savedLevels = localStorage.getItem('catto-levels');
-    if (savedLevels) {
-      try {
-        setLevels(JSON.parse(savedLevels));
-      } catch (e) {
-        console.error('Failed to load levels', e);
-      }
-    }
-    const savedCats = localStorage.getItem('catto-cats');
-    if (savedCats) {
-      try {
-        setMapCats(JSON.parse(savedCats));
-      } catch (e) {
-        console.error('Failed to load cats', e);
-      }
-    }
-    const savedActiveCat = localStorage.getItem('catto-active-cat');
-    if (savedActiveCat) setActiveCatIndex(parseInt(savedActiveCat));
-
-    const savedCoins = localStorage.getItem('catto-coins');
-    if (savedCoins) setCatCoins(parseInt(savedCoins));
-
-    const savedInventory = localStorage.getItem('catto-inventory');
-    if (savedInventory) {
-      try {
-        setInventory(JSON.parse(savedInventory));
-      } catch (e) {
-        console.error('Failed to load inventory', e);
-      }
-    }
-  }, []);
-
   useEffect(() => {
     localStorage.setItem('catto-levels', JSON.stringify(levels));
     localStorage.setItem('catto-cats', JSON.stringify(mapCats));
     localStorage.setItem('catto-active-cat', activeCatIndex.toString());
     localStorage.setItem('catto-coins', catCoins.toString());
     localStorage.setItem('catto-inventory', JSON.stringify(inventory));
-  }, [levels, mapCats, activeCatIndex, catCoins, inventory]);
+
+    // Sync with backend if logged in
+    if (user) {
+      fetch('/api/user/sync', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ cat_coins: catCoins, inventory: inventory })
+      }).catch(e => console.error('Failed to sync with backend', e));
+    }
+  }, [levels, mapCats, activeCatIndex, catCoins, inventory, user]);
 
   // Timer logic
   useEffect(() => {
@@ -368,11 +512,15 @@ export default function App() {
   const toggleTimer = () => {
     if (isTimerRunning) {
       // Stop timer and award coins
-      const minutes = timerSeconds / 60;
-      const coinsEarned = Math.floor(minutes * 20); // Increased to 20 coins per minute for better value
-      if (coinsEarned > 0) {
-        setCatCoins(prev => prev + coinsEarned);
-        setMessages(prev => [...prev, { role: 'cat', text: `Meow! You studied for ${Math.floor(minutes)}m ${timerSeconds % 60}s and earned ${coinsEarned} Cat Coins! You're getting rich, purr!` }]);
+      const coinsToAward = timerSeconds;
+      if (coinsToAward > 0) {
+        setCatCoins(prev => prev + coinsToAward);
+        const minutes = Math.floor(coinsToAward / 60);
+        const seconds = coinsToAward % 60;
+        setMessages(prev => [...prev, { 
+          role: 'cat', 
+          text: `Meow! You studied for ${minutes}m ${seconds}s and earned ${coinsToAward} Cat Coins! Purr-fect!` 
+        }]);
       }
       setIsTimerRunning(false);
       setTimerSeconds(0);
@@ -408,6 +556,9 @@ export default function App() {
     setSelectedLevel(level);
     setLevelProgress(0);
     setCurrentView('level');
+    // Auto-start timer when level begins
+    setIsTimerRunning(true);
+    setTimerSeconds(0);
   };
 
   const nextStep = () => {
@@ -418,6 +569,20 @@ export default function App() {
       const currentLevelId = selectedLevel.id;
       const currentOrder = selectedLevel.order;
       
+      // Stop timer and award coins automatically
+      const coinsToAward = timerSeconds;
+      if (coinsToAward > 0) {
+        setCatCoins(prev => prev + coinsToAward);
+        const minutes = Math.floor(coinsToAward / 60);
+        const seconds = coinsToAward % 60;
+        setMessages(prev => [...prev, { 
+          role: 'cat', 
+          text: `Meow! You finished the level in ${minutes}m ${seconds}s and earned ${coinsToAward} Cat Coins! Purr-fect!` 
+        }]);
+      }
+      setIsTimerRunning(false);
+      setTimerSeconds(0);
+
       setLevels(prevLevels => {
         const newLevels = prevLevels.map((lvl) => {
           if (lvl.id === currentLevelId) {
@@ -484,10 +649,16 @@ export default function App() {
   const handleLogin = async () => {
     try {
       const res = await fetch('/api/auth/github/url');
-      const { url } = await res.json();
-      window.open(url, 'github_oauth', 'width=600,height=700');
+      const contentType = res.headers.get('content-type');
+      if (res.ok && contentType && contentType.includes('application/json')) {
+        const { url } = await res.json();
+        window.open(url, 'github_oauth', 'width=600,height=700');
+      } else {
+        setMessages(prev => [...prev, { role: 'cat', text: "Meow... GitHub login is currently unavailable. Try again later!" }]);
+      }
     } catch (e) {
       console.error('Login error', e);
+      setMessages(prev => [...prev, { role: 'cat', text: "Meow... Connection error. Check your internet!" }]);
     }
   };
 
@@ -586,22 +757,41 @@ export default function App() {
     }
   };
 
-  const handleEmailAuth = (e: React.FormEvent) => {
+  const handleEmailAuth = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email || !password) return;
     
-    // Mock authentication for now as requested by UI-first approach
-    // In a real app, this would call /api/auth/register or login
-    const mockUser: User = {
-      id: crypto.randomUUID(),
-      github_id: 0,
-      username: email.split('@')[0],
-      avatar_url: `https://api.dicebear.com/7.x/pixel-art/svg?seed=${email}`
-    };
-    
-    setUser(mockUser);
-    setShowLanding(false);
-    setMessages(prev => [...prev, { role: 'cat', text: `Meow! Welcome ${mockUser.username}! I'm so happy you registered. Let's start learning!` }]);
+    try {
+      console.log(`Attempting ${isRegistering ? 'registration' : 'login'} for ${email}`);
+      const endpoint = isRegistering ? '/api/auth/register' : '/api/auth/login';
+      const res = await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password })
+      });
+      
+      console.log(`Auth response status: ${res.status}`);
+      const contentType = res.headers.get('content-type');
+      if (contentType && contentType.includes('application/json')) {
+        const data = await res.json();
+        if (res.ok) {
+          console.log('Auth successful', data.user);
+          setUser(data.user);
+          setShowLanding(false);
+          setMessages(prev => [...prev, { role: 'cat', text: `Meow! Welcome ${data.user.username}! I'm so happy you're here. Let's start learning!` }]);
+        } else {
+          console.warn('Auth failed', data.error);
+          setMessages(prev => [...prev, { role: 'cat', text: `Meow... ${data.error || 'Auth failed'}. Try again!` }]);
+        }
+      } else {
+        const text = await res.text();
+        console.error('Auth server error (non-JSON)', text);
+        setMessages(prev => [...prev, { role: 'cat', text: "Meow... Server error. Please try again later!" }]);
+      }
+    } catch (e) {
+      console.error('Auth connection error', e);
+      setMessages(prev => [...prev, { role: 'cat', text: "Meow... Connection error. Check your internet!" }]);
+    }
   };
 
   if (loading) {
@@ -729,9 +919,6 @@ export default function App() {
         {/* User Profile Bar (Mini) */}
         <div className="flex justify-between items-center mb-4">
           <div className="flex flex-col gap-1">
-            <div className="font-pixel text-[8px] text-retro-accent">
-              SYSTEM_STATUS: <span className="text-green-500">ONLINE</span>
-            </div>
             <div className="flex items-center gap-2 bg-retro-surface px-2 py-1 pixel-border">
               <Coins size={10} className="text-yellow-500" />
               <span className="font-pixel text-[8px] text-retro-accent">{catCoins}</span>
@@ -1016,69 +1203,57 @@ export default function App() {
                     <path
                       d={levels.map((l, i) => {
                         const x = 50 + Math.sin(i * 0.8) * 30;
-                        const y = i * 200 + 100;
+                        const y = i * 266 + 100;
                         return `${i === 0 ? 'M' : 'L'} ${x}% ${y}`;
                       }).join(' ')}
                       fill="none"
                       stroke="#166534"
                       strokeWidth="4"
                       strokeDasharray="8 8"
-                      className="opacity-30"
+                      className="opacity-20"
                     />
                   </svg>
-
-                  {/* Walking Cat on Map */}
-                  {(() => {
-                    const currentLvlIdx = levels.findIndex(l => l.status === 'current');
-                    const targetLvl = levels[currentLvlIdx] || levels[0];
-                    const xOffset = Math.sin(currentLvlIdx * 0.8) * 30;
-                    const yPos = currentLvlIdx * 200 + 100;
-
-                    return (
-                      <motion.div
-                        animate={{ 
-                          x: xOffset * 2, // Scale offset for visual better placement
-                          y: yPos - 60
-                        }}
-                        transition={{ type: 'spring', stiffness: 50 }}
-                        className="absolute z-30 pointer-events-none"
-                      >
-                        <PixelCat animated={true} className="scale-50" />
-                      </motion.div>
-                    );
-                  })()}
 
                   {levels.map((level, i) => {
                     const xOffset = Math.sin(i * 0.8) * 30;
                     const isMilestone = (i + 1) % 5 === 0;
                     const milestoneCat = isMilestone ? mapCats[Math.floor(i / 5) % mapCats.length] : null;
+                    const isCurrent = level.status === 'current';
+                    
+                    const houseColors = [
+                      'bg-rose-400', 'bg-amber-400', 'bg-emerald-400', 
+                      'bg-sky-400', 'bg-violet-400', 'bg-fuchsia-400',
+                      'bg-orange-400', 'bg-lime-400', 'bg-cyan-400'
+                    ];
+                    const houseColor = houseColors[i % houseColors.length];
 
                     return (
                       <div key={level.id} className="relative w-full flex flex-col items-center">
                         {/* Milestone Background Cat */}
                         {isMilestone && milestoneCat && (
                           <motion.div 
-                            initial={{ opacity: 0, scale: 0.5 }}
-                            whileInView={{ opacity: 0.25, scale: 1 }}
-                            className="absolute -z-10 w-48 h-48 overflow-hidden grayscale-0 opacity-30"
+                            initial={{ opacity: 0, scale: 0.8 }}
+                            whileInView={{ opacity: 0.5, scale: 1 }}
+                            className="absolute -z-10 w-64 h-64 overflow-hidden grayscale-0"
                             style={{ 
-                              left: i % 2 === 0 ? '5%' : '65%',
+                              left: i % 2 === 0 ? '5%' : '60%',
                               top: '50%',
                               transform: 'translateY(-50%)'
                             }}
                           >
-                            <img 
-                              src={milestoneCat.imageUrl} 
-                              alt="milestone" 
-                              className="w-full h-full object-cover pixel-border"
-                              referrerPolicy="no-referrer"
-                              onError={(e) => {
-                                // Fallback if image fails
-                                (e.target as HTMLImageElement).src = 'https://picsum.photos/seed/cat/200/200';
-                              }}
-                            />
-                            <div className="absolute inset-0 flex items-end justify-center pb-2 bg-gradient-to-t from-black/40 to-transparent">
-                              <span className="font-pixel text-[8px] text-white uppercase">{milestoneCat.name}</span>
+                            <div className="relative w-full h-full p-2 bg-white/10 border-4 border-retro-accent/20 rounded-xl backdrop-blur-sm">
+                              <img 
+                                src={milestoneCat.imageUrl} 
+                                alt="milestone" 
+                                className="w-full h-full object-cover pixel-border opacity-70"
+                                referrerPolicy="no-referrer"
+                                onError={(e) => {
+                                  (e.target as HTMLImageElement).src = 'https://picsum.photos/seed/cat/200/200';
+                                }}
+                              />
+                              <div className="absolute inset-0 flex items-end justify-center pb-4 bg-gradient-to-t from-black/50 to-transparent">
+                                <span className="font-pixel text-[10px] text-white uppercase tracking-widest">{milestoneCat.name}</span>
+                              </div>
                             </div>
                           </motion.div>
                         )}
@@ -1089,34 +1264,57 @@ export default function App() {
                           viewport={{ once: true }}
                           style={{ 
                             marginLeft: `${xOffset}%`,
-                            marginTop: i === 0 ? 0 : 150
+                            marginTop: i === 0 ? 0 : 170
                           }}
                           className="relative z-10"
                         >
+                          {/* Flying Cat Following Current Level */}
+                          {isCurrent && (
+                            <motion.div
+                              initial={{ x: -100, opacity: 0 }}
+                              animate={{ x: -70, opacity: 1 }}
+                              className="absolute top-0 left-0 z-40 pointer-events-none"
+                            >
+                              <PixelCat animated={true} className="scale-[0.4] origin-right" />
+                            </motion.div>
+                          )}
+
                           <div className="relative group/node">
                             <button
                               onClick={() => startLevel(level)}
                               disabled={level.status === 'locked'}
-                              className={`w-16 h-16 pixel-border flex flex-col items-center justify-center transition-all relative ${
-                                level.status === 'completed' ? 'bg-green-500 border-green-700' :
-                                level.status === 'current' ? 'bg-retro-primary border-rose-700 animate-bounce' :
-                                'bg-retro-surface border-retro-border grayscale cursor-not-allowed'
-                              } hover:scale-110 active:scale-95 shadow-lg`}
+                              className={`w-24 h-24 flex flex-col items-center justify-center transition-all relative p-2 rounded-2xl ${
+                                isCurrent ? 'animate-bounce border-4 border-retro-accent bg-white/10 shadow-[0_0_20px_rgba(244,114,182,0.4)]' : ''
+                              } hover:scale-110 active:scale-95`}
                             >
-                              {level.status === 'locked' ? (
-                                <Lock size={20} className="text-retro-border" />
-                              ) : (
-                                <>
-                                  <span className="font-pixel text-[12px] text-white drop-shadow-md">{i + 1}</span>
-                                  <div className="absolute -bottom-6 whitespace-nowrap">
-                                    <span className="font-pixel text-[6px] text-retro-accent uppercase">{level.title}</span>
-                                  </div>
-                                  {isMilestone && (
-                                    <div className="absolute -top-2 -right-2 bg-yellow-400 p-1 pixel-border animate-pulse">
-                                      <Sparkles size={10} className="text-white" />
-                                    </div>
-                                  )}
-                                </>
+                              <PixelAnimalHouse 
+                                type={level.animalType || 'cat'} 
+                                color={
+                                  houseColor === 'bg-rose-400' ? '#fb7185' :
+                                  houseColor === 'bg-amber-400' ? '#fbbf24' :
+                                  houseColor === 'bg-emerald-400' ? '#34d399' :
+                                  houseColor === 'bg-sky-400' ? '#38bdf8' :
+                                  houseColor === 'bg-violet-400' ? '#a78bfa' :
+                                  houseColor === 'bg-fuchsia-400' ? '#e879f9' :
+                                  houseColor === 'bg-orange-400' ? '#fb923c' :
+                                  houseColor === 'bg-lime-400' ? '#a3e635' :
+                                  '#22d3ee'
+                                }
+                                status={level.status}
+                                className={isCurrent ? 'drop-shadow-[0_0_10px_rgba(255,255,255,0.8)]' : ''}
+                              />
+                              
+                              <div className="absolute inset-0 flex flex-col items-center justify-center pt-8">
+                                <div className="flex items-center gap-1 bg-black/20 px-1 rounded-full">
+                                  <span className="font-pixel text-[10px] text-white drop-shadow-md">{i + 1}</span>
+                                  {level.status === 'completed' && <CheckCircle2 size={10} className="text-green-300" />}
+                                </div>
+                              </div>
+
+                              {isMilestone && (
+                                <div className="absolute -top-2 -right-2 bg-yellow-400 p-1 pixel-border animate-pulse">
+                                  <Sparkles size={10} className="text-white" />
+                                </div>
                               )}
                             </button>
 
@@ -1133,6 +1331,14 @@ export default function App() {
                                   </div>
                                 )}
                               </div>
+                            </div>
+                            
+                            <div className="absolute -bottom-8 left-1/2 -translate-x-1/2 whitespace-nowrap">
+                              <span className={`font-pixel text-[8px] uppercase tracking-tighter ${
+                                isCurrent ? 'text-retro-accent' : 'text-retro-primary opacity-60'
+                              }`}>
+                                {level.title}
+                              </span>
                             </div>
                           </div>
                         </motion.div>
@@ -1169,7 +1375,25 @@ export default function App() {
               className="space-y-8"
             >
               <div className="flex items-center justify-between">
-                <button onClick={() => setCurrentView('map')} className="pixel-button p-2">
+                <button 
+                  onClick={() => {
+                    // Stop timer and award coins when leaving manually
+                    const coinsToAward = timerSeconds;
+                    if (coinsToAward > 0) {
+                      setCatCoins(prev => prev + coinsToAward);
+                      const minutes = Math.floor(coinsToAward / 60);
+                      const seconds = coinsToAward % 60;
+                      setMessages(prev => [...prev, { 
+                        role: 'cat', 
+                        text: `Meow! You studied for ${minutes}m ${seconds}s. Good job!` 
+                      }]);
+                    }
+                    setIsTimerRunning(false);
+                    setTimerSeconds(0);
+                    setCurrentView('map');
+                  }} 
+                  className="pixel-button p-2"
+                >
                   <ArrowLeft size={16} />
                 </button>
                 <div className="font-pixel text-[10px] text-retro-accent">

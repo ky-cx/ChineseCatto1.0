@@ -18,8 +18,12 @@ db.exec(`
   CREATE TABLE IF NOT EXISTS users (
     id TEXT PRIMARY KEY,
     github_id INTEGER UNIQUE,
+    email TEXT UNIQUE,
+    password TEXT,
     username TEXT,
-    avatar_url TEXT
+    avatar_url TEXT,
+    cat_coins INTEGER DEFAULT 0,
+    inventory TEXT DEFAULT '[]'
   );
 
   CREATE TABLE IF NOT EXISTS words (
@@ -33,12 +37,58 @@ db.exec(`
   );
 `);
 
+// Migration: Ensure columns exist (for existing databases)
+const tableInfo = db.prepare("PRAGMA table_info(users)").all() as any[];
+const columns = tableInfo.map(c => c.name);
+
+console.log('Current columns in users table:', columns);
+
+if (!columns.includes('email')) {
+  try { 
+    console.log('Adding email column...');
+    db.exec("ALTER TABLE users ADD COLUMN email TEXT"); 
+    db.exec("CREATE UNIQUE INDEX IF NOT EXISTS idx_users_email ON users(email)");
+    console.log('Email column added successfully.');
+  } catch(e: any) {
+    console.error('Failed to add email column:', e.message);
+  }
+}
+if (!columns.includes('password')) {
+  try { 
+    console.log('Adding password column...');
+    db.exec("ALTER TABLE users ADD COLUMN password TEXT"); 
+    console.log('Password column added successfully.');
+  } catch(e: any) {
+    console.error('Failed to add password column:', e.message);
+  }
+}
+if (!columns.includes('cat_coins')) {
+  try { 
+    console.log('Adding cat_coins column...');
+    db.exec("ALTER TABLE users ADD COLUMN cat_coins INTEGER DEFAULT 0"); 
+    console.log('Cat_coins column added successfully.');
+  } catch(e: any) {
+    console.error('Failed to add cat_coins column:', e.message);
+  }
+}
+if (!columns.includes('inventory')) {
+  try { 
+    console.log('Adding inventory column...');
+    db.exec("ALTER TABLE users ADD COLUMN inventory TEXT DEFAULT '[]'"); 
+    console.log('Inventory column added successfully.');
+  } catch(e: any) {
+    console.error('Failed to add inventory column:', e.message);
+  }
+}
+
 import fs from 'fs';
 
 async function startServer() {
   try {
     const app = express();
     const PORT = 3000;
+
+    app.set('trust proxy', 1);
 
   app.use(express.json());
   app.use(session({
@@ -61,12 +111,80 @@ async function startServer() {
   app.get('/test', (req, res) => {
     res.send('Express is working!');
   });
+  app.get('/api/debug/db', (req, res) => {
+    try {
+      const userCount = db.prepare('SELECT COUNT(*) as count FROM users').get() as any;
+      const users = db.prepare('SELECT id, email, username FROM users LIMIT 5').all();
+      res.json({ userCount: userCount.count, sampleUsers: users });
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  app.post('/api/auth/register', (req, res) => {
+    const { email, password } = req.body;
+    const cleanEmail = email.trim().toLowerCase();
+    console.log(`Register attempt for: ${cleanEmail}`);
+    if (!cleanEmail || !password) return res.status(400).json({ error: 'Missing fields' });
+
+    try {
+      const id = crypto.randomUUID();
+      const username = cleanEmail.split('@')[0];
+      const avatar_url = `https://api.dicebear.com/7.x/pixel-art/svg?seed=${cleanEmail}`;
+      
+      db.prepare('INSERT INTO users (id, email, password, username, avatar_url) VALUES (?, ?, ?, ?, ?)')
+        .run(id, cleanEmail, password, username, avatar_url);
+      
+      const user = { id, email: cleanEmail, username, avatar_url, cat_coins: 0, inventory: '[]' };
+      (req.session as any).userId = id;
+      (req.session as any).user = user;
+      console.log(`User registered successfully: ${id}`);
+      res.json({ user });
+    } catch (e: any) {
+      console.error(`Registration error for ${email}:`, e.message);
+      if (e.message.includes('UNIQUE constraint failed')) {
+        return res.status(400).json({ error: 'Email already exists' });
+      }
+      res.status(500).json({ error: 'Registration failed' });
+    }
+  });
+
+  app.post('/api/auth/login', (req, res) => {
+    console.log('--- LOGIN ROUTE V2.1 ---');
+    const { email, password } = req.body;
+    if (!email || !password) return res.status(400).json({ error: 'Missing fields' });
+    const cleanEmail = email.trim().toLowerCase();
+    console.log(`Login attempt for: ${cleanEmail}`);
+
+    const user = db.prepare('SELECT * FROM users WHERE email = ?').get(cleanEmail) as any;
+    if (!user) {
+      console.log(`Login failed for: ${cleanEmail} - User not found`);
+      return res.status(401).json({ error: 'User not found. Please register first!' });
+    }
+
+    if (!user.password) {
+      console.log(`Login failed for: ${cleanEmail} - User has no password (GitHub account?)`);
+      return res.status(401).json({ error: 'This account was created via GitHub. Please use GitHub login!' });
+    }
+
+    if (user.password !== password) {
+      console.log(`Login failed for: ${cleanEmail} - Password mismatch`);
+      return res.status(401).json({ error: 'Invalid password. Please try again!' });
+    }
+
+    (req.session as any).userId = user.id;
+    (req.session as any).user = user;
+    console.log(`User logged in successfully: ${user.id}`);
+    res.json({ user });
+  });
+
   app.get('/api/auth/github/url', (req, res) => {
     const clientId = process.env.GITHUB_CLIENT_ID;
     if (!clientId) {
       return res.status(500).json({ error: 'GITHUB_CLIENT_ID not configured' });
     }
-    const redirectUri = `${process.env.APP_URL}/api/auth/github/callback`;
+    const baseUrl = (process.env.APP_URL || '').replace(/\/$/, '');
+    const redirectUri = `${baseUrl}/api/auth/github/callback`;
     const url = `https://github.com/login/oauth/authorize?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=read:user`;
     res.json({ url });
   });
@@ -93,14 +211,15 @@ async function startServer() {
       });
 
       const githubUser = userResponse.data;
+      const email = githubUser.email || `${githubUser.login}@github.com`;
 
       // Upsert user in DB
       let user = db.prepare('SELECT * FROM users WHERE github_id = ?').get(githubUser.id) as any;
       if (!user) {
         const id = crypto.randomUUID();
-        db.prepare('INSERT INTO users (id, github_id, username, avatar_url) VALUES (?, ?, ?, ?)')
-          .run(id, githubUser.id, githubUser.login, githubUser.avatar_url);
-        user = { id, github_id: githubUser.id, username: githubUser.login, avatar_url: githubUser.avatar_url };
+        db.prepare('INSERT INTO users (id, github_id, username, avatar_url, email) VALUES (?, ?, ?, ?, ?)')
+          .run(id, githubUser.id, githubUser.login, githubUser.avatar_url, email);
+        user = { id, github_id: githubUser.id, username: githubUser.login, avatar_url: githubUser.avatar_url, email };
       }
 
       // Set session
@@ -129,7 +248,22 @@ async function startServer() {
   });
 
   app.get('/api/auth/me', (req, res) => {
-    res.json({ user: (req.session as any).user || null });
+    const userId = (req.session as any).userId;
+    if (!userId) return res.json({ user: null });
+    
+    const user = db.prepare('SELECT * FROM users WHERE id = ?').get(userId) as any;
+    res.json({ user });
+  });
+
+  app.post('/api/user/sync', (req, res) => {
+    const userId = (req.session as any).userId;
+    if (!userId) return res.status(401).json({ error: 'Unauthorized' });
+
+    const { cat_coins, inventory } = req.body;
+    db.prepare('UPDATE users SET cat_coins = ?, inventory = ? WHERE id = ?')
+      .run(cat_coins, JSON.stringify(inventory), userId);
+    
+    res.json({ success: true });
   });
 
   app.post('/api/auth/logout', (req, res) => {
