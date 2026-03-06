@@ -1,11 +1,11 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Plus, Trash2, Book, Sparkles, Volume2, Github, LogOut, User as UserIcon, Map as MapIcon, Settings as SettingsIcon, Home as HomeIcon, ChevronRight, Lock, MessageSquare, Send, Loader2, Sun, Moon, ArrowLeft, CheckCircle2, Cat, ShoppingBag, Timer, Play, Pause, Square, Coins } from 'lucide-react';
+import { Plus, Trash2, Book, Sparkles, Volume2, Github, LogOut, User as UserIcon, Map as MapIcon, Settings as SettingsIcon, Home as HomeIcon, ChevronRight, Lock, MessageSquare, Send, Loader2, Sun, Moon, ArrowLeft, CheckCircle2, Cat, ShoppingBag, Timer, Play, Pause, Square, Coins, Heart, Flame } from 'lucide-react';
 import { GoogleGenAI } from "@google/genai";
 
-type View = 'home' | 'map' | 'settings' | 'level' | 'library' | 'shop';
+type View = 'home' | 'map' | 'settings' | 'level' | 'library' | 'shop' | 'vocabulary';
 type HomeSubView = 'chat' | 'collector';
-type Theme = 'dark' | 'light';
+type Theme = 'dark' | 'light' | 'colorful';
 
 interface ShopItem {
   id: string;
@@ -52,6 +52,11 @@ interface User {
   avatar_url: string;
   cat_coins?: number;
   inventory?: string;
+  mood?: number;
+  current_map_level?: number;
+  passive_earned?: number;
+  timer_start_time?: number;
+  streak_count?: number;
 }
 
 interface Word {
@@ -250,13 +255,32 @@ const PixelCat = ({ className = "", animated = true }: { className?: string; ani
 );
 
 const TOPICS = [
-  { title: 'Numbers', desc: '1-10', content: [{ char: '一', pinyin: 'yī', meaning: '1' }, { char: '二', pinyin: 'èr', meaning: '2' }, { char: '三', pinyin: 'sān', meaning: '3' }, { char: '四', pinyin: 'sì', meaning: '4' }, { char: '五', pinyin: 'wǔ', meaning: '5' }, { char: '六', pinyin: 'liù', meaning: '6' }, { char: '七', pinyin: 'qī', meaning: '7' }, { char: '八', pinyin: 'bā', meaning: '8' }, { char: '九', pinyin: 'jiǔ', meaning: '9' }, { char: '十', pinyin: 'shí', meaning: '10' }] },
+  { title: 'Numbers', desc: '1-10', content: [{ char: '一', pinyin: 'yī', meaning: 'One' }, { char: '二', pinyin: 'èr', meaning: 'Two' }, { char: '三', pinyin: 'sān', meaning: 'Three' }, { char: '四', pinyin: 'sì', meaning: 'Four' }, { char: '五', pinyin: 'wǔ', meaning: 'Five' }, { char: '六', pinyin: 'liù', meaning: 'Six' }, { char: '七', pinyin: 'qī', meaning: 'Seven' }, { char: '八', pinyin: 'bā', meaning: 'Eight' }, { char: '九', pinyin: 'jiǔ', meaning: 'Nine' }, { char: '十', pinyin: 'shí', meaning: 'Ten' }] },
   { title: 'Greetings', desc: 'Basic hellos', content: [{ char: '你好', pinyin: 'nǐ hǎo', meaning: 'Hello' }, { char: '谢谢', pinyin: 'xièxie', meaning: 'Thank you' }, { char: '不客气', pinyin: 'bú kèqi', meaning: "You're welcome" }, { char: '再见', pinyin: 'zàijiàn', meaning: 'Goodbye' }] },
   { title: 'Family', desc: 'Mom and Dad', content: [{ char: '爸爸', pinyin: 'bàba', meaning: 'Dad' }, { char: '妈妈', pinyin: 'māma', meaning: 'Mom' }, { char: '哥哥', pinyin: 'gēge', meaning: 'Older Brother' }, { char: '姐姐', pinyin: 'jiějie', meaning: 'Older Sister' }] },
   { title: 'Food', desc: 'Common dishes', content: [{ char: '米饭', pinyin: 'mǐfàn', meaning: 'Rice' }, { char: '面条', pinyin: 'miàntiáo', meaning: 'Noodles' }, { char: '水', pinyin: 'shuǐ', meaning: 'Water' }, { char: '茶', pinyin: 'chá', meaning: 'Tea' }] },
   { title: 'Animals', desc: 'Pets and more', content: [{ char: '猫', pinyin: 'māo', meaning: 'Cat' }, { char: '狗', pinyin: 'gǒu', meaning: 'Dog' }, { char: '鸟', pinyin: 'niǎo', meaning: 'Bird' }, { char: '鱼', pinyin: 'yú', meaning: 'Fish' }] },
   { title: 'Colors', desc: 'Rainbow colors', content: [{ char: '红', pinyin: 'hóng', meaning: 'Red' }, { char: '蓝', pinyin: 'lán', meaning: 'Blue' }, { char: '绿', pinyin: 'lǜ', meaning: 'Green' }, { char: '黄', pinyin: 'huáng', meaning: 'Yellow' }] },
   { title: 'Nature', desc: 'Sun and Moon', content: [{ char: '日', pinyin: 'rì', meaning: 'Sun' }, { char: '月', pinyin: 'yuè', meaning: 'Moon' }, { char: '山', pinyin: 'shān', meaning: 'Mountain' }, { char: '水', pinyin: 'shuǐ', meaning: 'Water' }] },
+];
+
+const VOCABULARY_LIST = [
+  { char: '猫', pinyin: 'māo', meaning: 'Cat' },
+  { char: '狗', pinyin: 'gǒu', meaning: 'Dog' },
+  { char: '鱼', pinyin: 'yú', meaning: 'Fish' },
+  { char: '鸟', pinyin: 'niǎo', meaning: 'Bird' },
+  { char: '苹果', pinyin: 'píngguǒ', meaning: 'Apple' },
+  { char: '香蕉', pinyin: 'xiāngjiāo', meaning: 'Banana' },
+  { char: '水', pinyin: 'shuǐ', meaning: 'Water' },
+  { char: '火', pinyin: 'huǒ', meaning: 'Fire' },
+  { char: '山', pinyin: 'shān', meaning: 'Mountain' },
+  { char: '月', pinyin: 'yuè', meaning: 'Moon' },
+  { char: '日', pinyin: 'rì', meaning: 'Sun' },
+  { char: '书', pinyin: 'shū', meaning: 'Book' },
+  { char: '家', pinyin: 'jiā', meaning: 'Home' },
+  { char: '人', pinyin: 'rén', meaning: 'Person' },
+  { char: '大', pinyin: 'dà', meaning: 'Big' },
+  { char: '小', pinyin: 'xiǎo', meaning: 'Small' },
 ];
 
 export default function App() {
@@ -270,6 +294,10 @@ export default function App() {
   const [selectedLevel, setSelectedLevel] = useState<Level | null>(null);
   const [levelProgress, setLevelProgress] = useState(0);
   const [user, setUser] = useState<User | null>(null);
+  const [showQuiz, setShowQuiz] = useState(false);
+  const [quizData, setQuizData] = useState<{ question: string; options: string[]; answer: string } | null>(null);
+  const [quizFeedback, setQuizFeedback] = useState<'correct' | 'incorrect' | null>(null);
+  const mapContainerRef = React.useRef<HTMLDivElement>(null);
   const [messages, setMessages] = useState<Message[]>([
     { role: 'cat', text: 'Meow! I am Catto. Want to learn some Chinese today?' }
   ]);
@@ -395,8 +423,12 @@ export default function App() {
       return [];
     }
   });
+  const [mood, setMood] = useState<number>(100);
+  const [currentMapLevel, setCurrentMapLevel] = useState<number>(1);
+  const [timerStartTime, setTimerStartTime] = useState<number | null>(null);
   const [isTimerRunning, setIsTimerRunning] = useState(false);
   const [timerSeconds, setTimerSeconds] = useState(0);
+  const [streak, setStreak] = useState<number>(0);
 
   const shopItems: ShopItem[] = [
     { id: 'food-1', name: 'Premium Tuna', price: 50, description: 'Delicious tuna for your cat.', icon: '🐟' },
@@ -404,6 +436,9 @@ export default function App() {
     { id: 'toy-2', name: 'Catnip Mouse', price: 80, description: 'A classic toy cats love.', icon: '🐭' },
     { id: 'bed-1', name: 'Luxury Bed', price: 300, description: 'A soft bed for royal naps.', icon: '🛏️' },
     { id: 'groom-1', name: 'Golden Brush', price: 150, description: 'Keep that fur shiny!', icon: '🖌️' },
+    { id: 'treat-1', name: 'Cat Treat', price: 20, description: 'A small snack to boost mood (+10).', icon: '🍪' },
+    { id: 'toy-3', name: 'Feather Wand', price: 60, description: 'Interactive play (+20 mood).', icon: '🪶' },
+    { id: 'catnip-1', name: 'Pure Catnip', price: 120, description: 'Ultimate happiness (+50 mood).', icon: '🌿' },
   ];
 
   const fetchUser = useCallback(async () => {
@@ -418,6 +453,31 @@ export default function App() {
         setUser(data.user);
         // Sync coins and inventory from DB
         setCatCoins(prev => Math.max(prev, data.user.cat_coins || 0));
+        setMood(data.user.mood || 100);
+        setCurrentMapLevel(data.user.current_map_level || 1);
+        setTimerStartTime(data.user.timer_start_time || null);
+        setStreak(data.user.streak_count || 0);
+        
+        if (data.user.timer_start_time) {
+          const elapsed = Math.floor((Date.now() - data.user.timer_start_time) / 1000);
+          setTimerSeconds(elapsed);
+          setIsTimerRunning(true);
+        }
+
+        if (data.streak && data.streak.streak_updated) {
+          setMessages(prev => [...prev, { 
+            role: 'cat', 
+            text: `Meow! Your learning streak is now ${data.streak.new_streak} days! I've awarded you ${data.streak.reward_coins} Cat Coins and +${data.streak.reward_mood}% mood boost! Keep it up! Purr~` 
+          }]);
+        }
+
+        if (data.user.passive_earned && data.user.passive_earned > 0) {
+          setMessages(prev => [...prev, { 
+            role: 'cat', 
+            text: `Meow! While you were away, I worked hard and earned ${data.user.passive_earned} Cat Coins for you! Purr-fect!` 
+          }]);
+        }
+
         if (data.user.inventory) {
           try {
             const dbInv = JSON.parse(data.user.inventory);
@@ -487,16 +547,51 @@ export default function App() {
     localStorage.setItem('catto-active-cat', activeCatIndex.toString());
     localStorage.setItem('catto-coins', catCoins.toString());
     localStorage.setItem('catto-inventory', JSON.stringify(inventory));
+    localStorage.setItem('catto-mood', mood.toString());
+    localStorage.setItem('catto-current-map-level', currentMapLevel.toString());
+    if (timerStartTime) localStorage.setItem('catto-timer-start', timerStartTime.toString());
+    else localStorage.removeItem('catto-timer-start');
 
     // Sync with backend if logged in
     if (user) {
       fetch('/api/user/sync', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ cat_coins: catCoins, inventory: inventory })
-      }).catch(e => console.error('Failed to sync with backend', e));
+        body: JSON.stringify({ 
+          cat_coins: catCoins, 
+          inventory: inventory,
+          mood: mood,
+          current_map_level: currentMapLevel,
+          timer_start_time: timerStartTime
+        })
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (data.streak && data.streak.streak_updated) {
+          setStreak(data.streak.new_streak);
+          // Update coins and mood from backend rewards
+          setCatCoins(prev => prev + data.streak.reward_coins);
+          setMood(prev => Math.min(100, prev + data.streak.reward_mood));
+          setMessages(prev => [...prev, { 
+            role: 'cat', 
+            text: `Meow! Your learning streak is now ${data.streak.new_streak} days! I've awarded you ${data.streak.reward_coins} Cat Coins and +${data.streak.reward_mood}% mood boost! Keep it up! Purr~` 
+          }]);
+        }
+      })
+      .catch(e => console.error('Failed to sync with backend', e));
     }
-  }, [levels, mapCats, activeCatIndex, catCoins, inventory, user]);
+  }, [levels, mapCats, activeCatIndex, catCoins, inventory, mood, currentMapLevel, timerStartTime, user]);
+
+  // Real-time Passive Income Tick & Mood Decay
+  useEffect(() => {
+    if (!user) return;
+    const interval = setInterval(() => {
+      setCatCoins(prev => prev + 1);
+      // Slow mood decay: 1% every 5 minutes
+      setMood(prev => Math.max(0, prev - 0.2)); // 0.2% per minute = 1% per 5 mins
+    }, 60000); // 1 tick per minute
+    return () => clearInterval(interval);
+  }, [user]);
 
   // Timer logic
   useEffect(() => {
@@ -512,11 +607,14 @@ export default function App() {
   const toggleTimer = () => {
     if (isTimerRunning) {
       // Stop timer and award coins
-      const coinsToAward = timerSeconds;
+      const now = Date.now();
+      const elapsed = timerStartTime ? Math.floor((now - timerStartTime) / 1000) : timerSeconds;
+      const coinsToAward = Math.floor(elapsed / 10); // 1 coin per 10 seconds of active study
+      
       if (coinsToAward > 0) {
         setCatCoins(prev => prev + coinsToAward);
-        const minutes = Math.floor(coinsToAward / 60);
-        const seconds = coinsToAward % 60;
+        const minutes = Math.floor(elapsed / 60);
+        const seconds = elapsed % 60;
         setMessages(prev => [...prev, { 
           role: 'cat', 
           text: `Meow! You studied for ${minutes}m ${seconds}s and earned ${coinsToAward} Cat Coins! Purr-fect!` 
@@ -524,14 +622,40 @@ export default function App() {
       }
       setIsTimerRunning(false);
       setTimerSeconds(0);
+      setTimerStartTime(null);
     } else {
+      const now = Date.now();
+      setTimerStartTime(now);
       setIsTimerRunning(true);
+      setTimerSeconds(0);
     }
   };
 
   const buyItem = (item: ShopItem) => {
     if (catCoins >= item.price) {
       setCatCoins(prev => prev - item.price);
+      
+      let moodBoost = 0;
+      let feedback = "";
+
+      // Apply mood boost if it's a mood item
+      if (item.id === 'treat-1') {
+        moodBoost = 10;
+        feedback = "Mmm... Delicious cat treat! I feel 10% happier! Purr~";
+      } else if (item.id === 'toy-3') {
+        moodBoost = 20;
+        feedback = "Wow! A feather wand! Let's play! I feel 20% more energetic! Meow!";
+      } else if (item.id === 'catnip-1') {
+        moodBoost = 50;
+        feedback = "OH MY CAT! PURE CATNIP! I'M FLYING! +50% MOOD! PURRRRRRRRR!";
+      } else {
+        feedback = `Meow! You bought ${item.name}! I'll keep it safe in your inventory!`;
+      }
+
+      if (moodBoost > 0) {
+        setMood(prev => Math.min(100, prev + moodBoost));
+      }
+
       setInventory(prev => {
         const existing = prev.find(i => i.itemId === item.id);
         if (existing) {
@@ -539,9 +663,10 @@ export default function App() {
         }
         return [...prev, { id: crypto.randomUUID(), itemId: item.id, quantity: 1 }];
       });
-      setMessages(prev => [...prev, { role: 'cat', text: `Meow! You bought ${item.name}! Your cat will love it!` }]);
+      
+      setMessages(prev => [...prev, { role: 'cat', text: feedback }]);
     } else {
-      setMessages(prev => [...prev, { role: 'cat', text: `Meow... You don't have enough coins for ${item.name}. Keep studying!` }]);
+      setMessages(prev => [...prev, { role: 'cat', text: `Meow... You don't have enough coins for ${item.name}. Keep studying to earn more!` }]);
     }
   };
 
@@ -551,89 +676,173 @@ export default function App() {
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
 
+  const goToMap = useCallback(() => {
+    setCurrentView('map');
+    // We'll use a timeout to ensure the DOM is updated before scrolling
+    setTimeout(() => {
+      if (mapContainerRef.current) {
+        const currentLevelElement = mapContainerRef.current.querySelector(`[data-level-order="${currentMapLevel - 1}"]`);
+        if (currentLevelElement) {
+          currentLevelElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        } else {
+          // Fallback to current status
+          const statusElement = mapContainerRef.current.querySelector('[data-current="true"]');
+          if (statusElement) statusElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      }
+    }, 100);
+  }, [currentMapLevel]);
+
   const startLevel = (level: Level) => {
     if (level.status === 'locked') return;
     setSelectedLevel(level);
     setLevelProgress(0);
     setCurrentView('level');
+    setCurrentMapLevel(level.order + 1); // Focus on this level in map
     // Auto-start timer when level begins
+    const now = Date.now();
+    setTimerStartTime(now);
     setIsTimerRunning(true);
     setTimerSeconds(0);
+  };
+
+  const generateQuiz = (level: Level) => {
+    const randomWord = level.content[Math.floor(Math.random() * level.content.length)];
+    const quizType = Math.random() > 0.5 ? 'meaning' : 'pinyin';
+    
+    let question = "";
+    let answer = "";
+    let options: string[] = [];
+    
+    if (quizType === 'meaning') {
+      question = `What does "${randomWord.char}" mean?`;
+      answer = randomWord.meaning;
+      const otherMeanings = level.content
+        .filter(w => w.char !== randomWord.char)
+        .map(w => w.meaning);
+      options = [answer, ...otherMeanings.slice(0, 3)];
+    } else {
+      question = `What is the pinyin for "${randomWord.char}"?`;
+      answer = randomWord.pinyin;
+      const otherPinyins = level.content
+        .filter(w => w.char !== randomWord.char)
+        .map(w => w.pinyin);
+      options = [answer, ...otherPinyins.slice(0, 3)];
+    }
+    
+    // Shuffle options
+    options = options.sort(() => Math.random() - 0.5);
+    
+    setQuizData({ question, options, answer });
+    setQuizFeedback(null);
+    setShowQuiz(true);
+  };
+
+  const handleQuizAnswer = (selectedOption: string) => {
+    if (!quizData) return;
+    
+    if (selectedOption === quizData.answer) {
+      setQuizFeedback('correct');
+      setTimeout(() => {
+        completeLevel();
+      }, 1500);
+    } else {
+      setQuizFeedback('incorrect');
+      setTimeout(() => {
+        setQuizFeedback(null);
+      }, 1500);
+    }
+  };
+
+  const completeLevel = () => {
+    if (!selectedLevel) return;
+    
+    const currentLevelId = selectedLevel.id;
+    const currentOrder = selectedLevel.order;
+    
+    const now = Date.now();
+    const elapsed = timerStartTime ? Math.floor((now - timerStartTime) / 1000) : timerSeconds;
+    const coinsToAward = Math.floor(elapsed / 10);
+    
+    if (coinsToAward > 0) {
+      setCatCoins(prev => prev + coinsToAward);
+      const minutes = Math.floor(elapsed / 60);
+      const seconds = elapsed % 60;
+      setMessages(prev => [...prev, { 
+        role: 'cat', 
+        text: `Meow! You finished the level in ${minutes}m ${seconds}s and earned ${coinsToAward} Cat Coins! Purr-fect!` 
+      }]);
+    }
+    setIsTimerRunning(false);
+    setTimerSeconds(0);
+    setTimerStartTime(null);
+    setCurrentMapLevel(currentOrder + 2); // Set next level as persistent focus
+
+    setLevels(prevLevels => {
+      const newLevels = prevLevels.map((lvl) => {
+        if (lvl.id === currentLevelId) {
+          return { ...lvl, status: 'completed' as const };
+        }
+        if (lvl.order === currentOrder + 1 && lvl.status === 'locked') {
+          return { ...lvl, status: 'current' as const };
+        }
+        return lvl;
+      });
+
+      // Unlock a cat every 5 levels (order 4, 9, 14...)
+      if ((currentOrder + 1) % 5 === 0) {
+        setMapCats(prevCats => {
+          const lockedCats = prevCats.filter(c => !c.unlocked);
+          if (lockedCats.length > 0) {
+            const catToUnlock = lockedCats[0];
+            return prevCats.map(c => c.id === catToUnlock.id ? { ...c, unlocked: true } : c);
+          }
+          return prevCats;
+        });
+        setMessages(prev => [...prev, { role: 'cat', text: `Meow! You reached a milestone! A new cat has been added to your library! Purr-fect!` }]);
+      }
+
+      // If we completed the last available level, generate more
+      if (currentOrder === prevLevels.length - 1) {
+        const nextLevel = generateLevel(currentOrder + 1);
+        nextLevel.status = 'current';
+        return [...newLevels.map(l => l.id === currentLevelId ? {...l, status: 'completed' as const} : l), nextLevel];
+      }
+      
+      // Always ensure we have at least 5 levels ahead of the current one
+      const lastOrder = newLevels[newLevels.length - 1].order;
+      if (lastOrder - currentOrder < 5) {
+        const extraLevels = [];
+        for (let i = 1; i <= 5; i++) {
+          extraLevels.push(generateLevel(lastOrder + i));
+        }
+        return [...newLevels, ...extraLevels];
+      }
+
+      return newLevels;
+    });
+
+    setShowQuiz(false);
+    setQuizData(null);
+    goToMap();
+    setSelectedLevel(null);
   };
 
   const nextStep = () => {
     if (selectedLevel && levelProgress < selectedLevel.content.length - 1) {
       setLevelProgress(prev => prev + 1);
     } else if (selectedLevel) {
-      // Level completed
-      const currentLevelId = selectedLevel.id;
-      const currentOrder = selectedLevel.order;
-      
-      // Stop timer and award coins automatically
-      const coinsToAward = timerSeconds;
-      if (coinsToAward > 0) {
-        setCatCoins(prev => prev + coinsToAward);
-        const minutes = Math.floor(coinsToAward / 60);
-        const seconds = coinsToAward % 60;
-        setMessages(prev => [...prev, { 
-          role: 'cat', 
-          text: `Meow! You finished the level in ${minutes}m ${seconds}s and earned ${coinsToAward} Cat Coins! Purr-fect!` 
-        }]);
-      }
-      setIsTimerRunning(false);
-      setTimerSeconds(0);
-
-      setLevels(prevLevels => {
-        const newLevels = prevLevels.map((lvl) => {
-          if (lvl.id === currentLevelId) {
-            return { ...lvl, status: 'completed' as const };
-          }
-          if (lvl.order === currentOrder + 1 && lvl.status === 'locked') {
-            return { ...lvl, status: 'current' as const };
-          }
-          return lvl;
-        });
-
-        // Unlock a cat every 5 levels (order 4, 9, 14...)
-        if ((currentOrder + 1) % 5 === 0) {
-          setMapCats(prevCats => {
-            const lockedCats = prevCats.filter(c => !c.unlocked);
-            if (lockedCats.length > 0) {
-              const catToUnlock = lockedCats[0];
-              return prevCats.map(c => c.id === catToUnlock.id ? { ...c, unlocked: true } : c);
-            }
-            return prevCats;
-          });
-          setMessages(prev => [...prev, { role: 'cat', text: `Meow! You reached a milestone! A new cat has been added to your library! Purr-fect!` }]);
-        }
-
-        // If we completed the last available level, generate more
-        if (currentOrder === prevLevels.length - 1) {
-          const nextLevel = generateLevel(currentOrder + 1);
-          nextLevel.status = 'current';
-          return [...newLevels.map(l => l.id === currentLevelId ? {...l, status: 'completed' as const} : l), nextLevel];
-        }
-        
-        // Always ensure we have at least 5 levels ahead of the current one
-        const lastOrder = newLevels[newLevels.length - 1].order;
-        if (lastOrder - currentOrder < 5) {
-          const extraLevels = [];
-          for (let i = 1; i <= 5; i++) {
-            extraLevels.push(generateLevel(lastOrder + i));
-          }
-          return [...newLevels, ...extraLevels];
-        }
-
-        return newLevels;
-      });
-
-      setCurrentView('map');
-      setSelectedLevel(null);
+      // Level content finished, show quiz
+      generateQuiz(selectedLevel);
     }
   };
 
   const toggleTheme = () => {
-    setTheme(prev => prev === 'dark' ? 'light' : 'dark');
+    setTheme(prev => {
+      if (prev === 'light') return 'dark';
+      if (prev === 'dark') return 'colorful';
+      return 'light';
+    });
   };
 
   useEffect(() => {
@@ -645,6 +854,20 @@ export default function App() {
     window.addEventListener('message', handleMessage);
     return () => window.removeEventListener('message', handleMessage);
   }, [fetchUser]);
+
+  useEffect(() => {
+    if (currentView === 'map') {
+      // Scroll to current level when entering map
+      setTimeout(() => {
+        if (mapContainerRef.current) {
+          const currentLevelElement = mapContainerRef.current.querySelector('[data-current="true"]');
+          if (currentLevelElement) {
+            currentLevelElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          }
+        }
+      }, 300);
+    }
+  }, [currentView]);
 
   const handleLogin = async () => {
     try {
@@ -777,11 +1000,38 @@ export default function App() {
         if (res.ok) {
           console.log('Auth successful', data.user);
           setUser(data.user);
+          setCatCoins(data.user.cat_coins || 0);
+          setMood(data.user.mood || 100);
+          setCurrentMapLevel(data.user.current_map_level || 1);
+          setTimerStartTime(data.user.timer_start_time || null);
+          setStreak(data.user.streak_count || 0);
+          setInventory(data.user.inventory ? JSON.parse(data.user.inventory) : []);
+          
+          if (data.user.timer_start_time) {
+            const elapsed = Math.floor((Date.now() - data.user.timer_start_time) / 1000);
+            setTimerSeconds(elapsed);
+            setIsTimerRunning(true);
+          }
+
+          if (data.user.passive_earned && data.user.passive_earned > 0) {
+            setMessages(prev => [...prev, { 
+              role: 'cat', 
+              text: `Meow! While you were away, I earned ${data.user.passive_earned} Cat Coins for you! Purr-fect!` 
+            }]);
+          }
+
           setShowLanding(false);
           setMessages(prev => [...prev, { role: 'cat', text: `Meow! Welcome ${data.user.username}! I'm so happy you're here. Let's start learning!` }]);
         } else {
           console.warn('Auth failed', data.error);
-          setMessages(prev => [...prev, { role: 'cat', text: `Meow... ${data.error || 'Auth failed'}. Try again!` }]);
+          const isDuplicate = data.error?.includes('already registered');
+          setMessages(prev => [...prev, { 
+            role: 'cat', 
+            text: `Meow... ${data.error || 'Auth failed'}. ${isDuplicate ? 'Try switching to the Sign In tab!' : 'Try again!'}` 
+          }]);
+          if (isDuplicate) {
+            setIsRegistering(false);
+          }
         }
       } else {
         const text = await res.text();
@@ -843,13 +1093,13 @@ export default function App() {
               <PixelCat animated={true} />
             </motion.div>
             <h1 className="font-pixel text-2xl text-retro-accent mb-2">CHINESECATTO</h1>
-            <p className="font-pixel text-[8px] text-retro-primary uppercase tracking-widest">Your Infinite Journey Starts Here</p>
+            <p className="font-sans font-bold text-[10px] text-retro-primary uppercase tracking-widest">Your Infinite Journey Starts Here</p>
           </div>
 
           <form onSubmit={handleEmailAuth} className="space-y-6">
             <div className="space-y-4">
               <div className="space-y-2">
-                <label className="block font-pixel text-[8px] text-retro-primary uppercase">Email Address</label>
+                <label className="block font-sans font-bold text-[10px] text-retro-primary uppercase">Email Address</label>
                 <input 
                   type="email" 
                   value={email}
@@ -860,7 +1110,7 @@ export default function App() {
                 />
               </div>
               <div className="space-y-2">
-                <label className="block font-pixel text-[8px] text-retro-primary uppercase">Password</label>
+                <label className="block font-sans font-bold text-[10px] text-retro-primary uppercase">Password</label>
                 <input 
                   type="password" 
                   value={password}
@@ -877,21 +1127,21 @@ export default function App() {
               className="w-full pixel-button py-3 flex items-center justify-center gap-2 group"
             >
               <Sparkles size={16} className="group-hover:animate-spin" />
-              <span className="font-pixel text-[10px]">{isRegistering ? 'CREATE ACCOUNT' : 'SIGN IN'}</span>
+              <span className="font-sans font-bold text-xs">{isRegistering ? 'CREATE ACCOUNT' : 'SIGN IN'}</span>
             </button>
           </form>
 
           <div className="mt-6 flex flex-col gap-4">
             <button 
               onClick={() => setIsRegistering(!isRegistering)}
-              className="font-pixel text-[8px] text-retro-primary hover:text-retro-accent transition-colors underline"
+              className="font-sans font-bold text-[10px] text-retro-primary hover:text-retro-accent transition-colors underline"
             >
               {isRegistering ? 'ALREADY HAVE AN ACCOUNT? SIGN IN' : 'NEED AN ACCOUNT? REGISTER'}
             </button>
             
             <div className="relative">
               <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-retro-border"></div></div>
-              <div className="relative flex justify-center text-[8px] uppercase"><span className="bg-retro-surface px-2 text-retro-border font-pixel">Or continue with</span></div>
+              <div className="relative flex justify-center text-[10px] uppercase"><span className="bg-retro-surface px-2 text-retro-border font-sans font-bold">Or continue with</span></div>
             </div>
 
             <button 
@@ -903,7 +1153,7 @@ export default function App() {
             </button>
           </div>
 
-          <p className="mt-8 text-center font-pixel text-[6px] text-retro-border uppercase">
+          <p className="mt-8 text-center font-sans font-bold text-[8px] text-retro-border uppercase">
             By joining, you agree to our pixel-perfect terms.
           </p>
         </motion.div>
@@ -918,17 +1168,23 @@ export default function App() {
       <div className="max-w-2xl mx-auto relative z-10">
         {/* User Profile Bar (Mini) */}
         <div className="flex justify-between items-center mb-4">
-          <div className="flex flex-col gap-1">
+          <div className="flex items-center gap-2">
             <div className="flex items-center gap-2 bg-retro-surface px-2 py-1 pixel-border">
               <Coins size={10} className="text-yellow-500" />
-              <span className="font-pixel text-[8px] text-retro-accent">{catCoins}</span>
+              <span className="font-sans text-[10px] font-bold text-retro-accent">{catCoins}</span>
             </div>
+            {streak > 0 && (
+              <div className="flex items-center gap-2 bg-retro-surface px-2 py-1 pixel-border">
+                <Flame size={10} className="text-orange-500" />
+                <span className="font-sans text-[10px] font-bold text-retro-accent">{streak} DAY STREAK</span>
+              </div>
+            )}
           </div>
           <div className="flex items-center gap-4">
             {/* Study Timer Mini */}
             <div className={`flex items-center gap-2 bg-retro-surface px-2 py-1 pixel-border ${isTimerRunning ? 'border-retro-accent animate-pulse' : ''}`}>
               <Timer size={10} className={isTimerRunning ? 'text-retro-accent' : 'text-retro-primary'} />
-              <span className="font-pixel text-[8px] text-retro-accent">{formatTime(timerSeconds)}</span>
+              <span className="font-sans text-[10px] font-bold text-retro-accent">{formatTime(timerSeconds)}</span>
               <button onClick={toggleTimer} className="text-retro-primary hover:text-retro-accent">
                 {isTimerRunning ? <Square size={10} /> : <Play size={10} />}
               </button>
@@ -937,20 +1193,20 @@ export default function App() {
             {user ? (
               <div className="flex items-center gap-2 bg-retro-surface p-1 pixel-border">
                 <img src={user.avatar_url} alt={user.username} className="w-6 h-6 pixel-border border-retro-primary" />
-                <span className="font-pixel text-[6px] text-retro-accent uppercase">{user.username}</span>
+                <span className="font-sans font-bold text-[10px] text-retro-accent uppercase">{user.username}</span>
               </div>
             ) : (
               <div className="flex items-center gap-2">
                 <button 
                   onClick={handleLogin}
-                  className="font-pixel text-[8px] text-retro-primary hover:text-retro-accent transition-colors"
+                  className="font-sans font-bold text-[10px] text-retro-primary hover:text-retro-accent transition-colors"
                 >
                   [ LOGIN ]
                 </button>
-                <span className="text-retro-border text-[8px]">|</span>
+                <span className="text-retro-border text-[10px]">|</span>
                 <button 
                   onClick={handleLogin}
-                  className="font-pixel text-[8px] text-retro-primary hover:text-retro-accent transition-colors"
+                  className="font-sans font-bold text-[10px] text-retro-primary hover:text-retro-accent transition-colors"
                 >
                   [ REGISTER ]
                 </button>
@@ -968,6 +1224,54 @@ export default function App() {
               exit={{ opacity: 0, x: 20 }}
               className="space-y-6"
             >
+              {/* Stats Bar */}
+              <div className="grid grid-cols-2 gap-4">
+                <div className="bg-retro-surface p-4 pixel-border flex items-center gap-3 shadow-[4px_4px_0_0_var(--color-1)]">
+                  <div className="p-2 bg-yellow-100 pixel-border">
+                    <Coins className="text-yellow-600" size={16} />
+                  </div>
+                  <div>
+                    <p className="font-sans font-bold text-[10px] text-retro-primary opacity-60 uppercase">Cat Coins</p>
+                    <p className="font-sans font-bold text-[10px] text-retro-accent">{catCoins}</p>
+                  </div>
+                </div>
+                <div className="bg-retro-surface p-4 pixel-border flex items-center gap-3 shadow-[4px_4px_0_0_var(--color-2)]">
+                  <div className="p-2 bg-pink-100 pixel-border">
+                    <Heart className="text-pink-600" size={16} />
+                  </div>
+                  <div className="flex-1">
+                    <p className="font-sans font-bold text-[10px] text-retro-primary opacity-60 uppercase">Cat Mood</p>
+                    <div className="w-full h-2 bg-retro-bg pixel-border mt-1 overflow-hidden">
+                      <motion.div 
+                        animate={{ width: `${mood}%` }}
+                        className={`h-full ${mood > 50 ? 'bg-green-500' : mood > 20 ? 'bg-yellow-500' : 'bg-red-500'}`}
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="bg-retro-surface p-4 pixel-border flex items-center gap-3 shadow-[4px_4px_0_0_var(--color-3)]">
+                  <div className="p-2 bg-orange-100 pixel-border">
+                    <Flame className="text-orange-600" size={16} />
+                  </div>
+                  <div>
+                    <p className="font-sans font-bold text-[10px] text-retro-primary opacity-60 uppercase">Streak</p>
+                    <p className="font-sans font-bold text-[10px] text-retro-accent">{streak} DAYS</p>
+                  </div>
+                </div>
+                <div className="bg-retro-surface p-4 pixel-border flex items-center gap-3 shadow-[4px_4px_0_0_var(--color-4)]">
+                  <div className="p-2 bg-blue-100 pixel-border">
+                    <Timer className="text-blue-600" size={16} />
+                  </div>
+                  <div>
+                    <p className="font-sans font-bold text-[10px] text-retro-primary opacity-60 uppercase">Study Time</p>
+                    <p className="font-sans font-bold text-[10px] text-retro-accent">{formatTime(timerSeconds)}</p>
+                  </div>
+                </div>
+              </div>
+
               {/* Header */}
               <header className="text-center mb-8">
                 <motion.div
@@ -993,15 +1297,15 @@ export default function App() {
               <div className="flex gap-2 mb-6">
                 <button 
                   onClick={() => setHomeSubView('chat')}
-                  className={`flex-1 py-2 font-pixel text-[8px] pixel-border transition-colors ${homeSubView === 'chat' ? 'bg-retro-primary text-white' : 'bg-retro-surface text-retro-primary'}`}
+                  className={`flex-1 py-2 font-sans font-bold text-[10px] pixel-border transition-colors ${homeSubView === 'chat' ? 'bg-retro-primary text-white' : 'bg-retro-surface text-retro-primary'}`}
                 >
-                  CHAT_WITH_CATTO
+                  CHAT
                 </button>
                 <button 
                   onClick={() => setHomeSubView('collector')}
-                  className={`flex-1 py-2 font-pixel text-[8px] pixel-border transition-colors ${homeSubView === 'collector' ? 'bg-retro-primary text-white' : 'bg-retro-surface text-retro-primary'}`}
+                  className={`flex-1 py-2 font-sans font-bold text-[10px] pixel-border transition-colors ${homeSubView === 'collector' ? 'bg-retro-primary text-white' : 'bg-retro-surface text-retro-primary'}`}
                 >
-                  WORD_COLLECTOR
+                  COLLECTOR
                 </button>
               </div>
 
@@ -1014,7 +1318,29 @@ export default function App() {
                     exit={{ opacity: 0, y: -10 }}
                     className="space-y-4"
                   >
-                    <div className="bg-retro-surface p-4 pixel-border h-[300px] overflow-y-auto space-y-4 scrollbar-hide">
+                    <div className="bg-retro-surface p-4 pixel-border h-[300px] overflow-y-auto space-y-4 scrollbar-hide relative">
+                      {/* Mood Indicator */}
+                      <div className="sticky top-0 right-0 flex justify-end z-20 pointer-events-none">
+                        <div className="bg-retro-surface/80 backdrop-blur-sm pixel-border p-1 flex items-center gap-1 shadow-lg">
+                          <span className="font-pixel text-[6px] text-retro-primary uppercase">Mood</span>
+                          <div className="flex gap-0.5">
+                            {Array.from({ length: 5 }).map((_, i) => (
+                              <motion.div
+                                key={i}
+                                animate={mood > i * 20 ? { scale: [1, 1.2, 1] } : {}}
+                                transition={{ duration: 1, repeat: Infinity, delay: i * 0.2 }}
+                              >
+                                <Heart 
+                                  size={8} 
+                                  className={mood > i * 20 ? 'text-red-500 fill-red-500' : 'text-retro-border'} 
+                                />
+                              </motion.div>
+                            ))}
+                          </div>
+                          <span className="font-pixel text-[6px] text-retro-accent ml-1">{mood}%</span>
+                        </div>
+                      </div>
+
                       {messages.map((msg, i) => (
                         <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                           <div className={`max-w-[80%] p-3 pixel-border ${msg.role === 'user' ? 'bg-retro-primary text-white' : 'bg-retro-bg border-retro-primary'}`}>
@@ -1177,7 +1503,7 @@ export default function App() {
                 <p className="font-pixel text-[6px] text-retro-primary opacity-60">CLIMB THE ENDLESS PATH OF KNOWLEDGE</p>
               </div>
               
-              <div className="flex-1 bg-[#4ade80]/20 relative overflow-y-auto overflow-x-hidden scrollbar-hide p-8 rounded-3xl">
+              <div ref={mapContainerRef} className="flex-1 bg-[#4ade80]/20 relative overflow-y-auto overflow-x-hidden scrollbar-hide p-8 rounded-3xl">
                 {/* Meadow Decorations */}
                 <div className="absolute inset-0 pointer-events-none">
                   {Array.from({ length: 20 }).map((_, i) => (
@@ -1266,13 +1592,24 @@ export default function App() {
                             marginLeft: `${xOffset}%`,
                             marginTop: i === 0 ? 0 : 170
                           }}
+                          data-current={isCurrent}
+                          data-level-order={i}
                           className="relative z-10"
                         >
                           {/* Flying Cat Following Current Level */}
                           {isCurrent && (
                             <motion.div
                               initial={{ x: -100, opacity: 0 }}
-                              animate={{ x: -70, opacity: 1 }}
+                              animate={{ 
+                                x: -70, 
+                                opacity: 1,
+                                y: [0, -10, 0]
+                              }}
+                              transition={{
+                                y: { duration: 2, repeat: Infinity, ease: "easeInOut" },
+                                x: { duration: 0.5 },
+                                opacity: { duration: 0.5 }
+                              }}
                               className="absolute top-0 left-0 z-40 pointer-events-none"
                             >
                               <PixelCat animated={true} className="scale-[0.4] origin-right" />
@@ -1321,20 +1658,20 @@ export default function App() {
                             {/* Level Info Tooltip */}
                             <div className="absolute left-full ml-4 top-1/2 -translate-y-1/2 opacity-0 group-hover/node:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-30">
                               <div className="bg-retro-surface pixel-border p-3 shadow-xl max-w-[150px]">
-                                <p className="font-pixel text-[8px] text-retro-accent mb-1">{level.title}</p>
-                                <p className="font-pixel text-[6px] text-retro-primary uppercase leading-tight">{level.description}</p>
-                                {isMilestone && <p className="font-pixel text-[5px] text-yellow-500 mt-1">✨ CAT UNLOCK MILESTONE ✨</p>}
+                                <p className="font-sans font-bold text-xs text-retro-accent mb-1">{level.title}</p>
+                                <p className="font-sans text-[10px] text-retro-primary font-medium uppercase leading-tight">{level.description}</p>
+                                {isMilestone && <p className="font-sans font-bold text-[8px] text-yellow-500 mt-1">✨ CAT UNLOCK MILESTONE ✨</p>}
                                 {level.status === 'completed' && (
                                   <div className="mt-2 flex items-center gap-1 text-green-500">
                                     <CheckCircle2 size={10} />
-                                    <span className="font-pixel text-[5px]">MASTERED</span>
+                                    <span className="font-sans font-bold text-[8px]">MASTERED</span>
                                   </div>
                                 )}
                               </div>
                             </div>
                             
                             <div className="absolute -bottom-8 left-1/2 -translate-x-1/2 whitespace-nowrap">
-                              <span className={`font-pixel text-[8px] uppercase tracking-tighter ${
+                              <span className={`font-sans font-bold text-[10px] uppercase tracking-tighter ${
                                 isCurrent ? 'text-retro-accent' : 'text-retro-primary opacity-60'
                               }`}>
                                 {level.title}
@@ -1378,11 +1715,13 @@ export default function App() {
                 <button 
                   onClick={() => {
                     // Stop timer and award coins when leaving manually
-                    const coinsToAward = timerSeconds;
+                    const now = Date.now();
+                    const elapsed = timerStartTime ? Math.floor((now - timerStartTime) / 1000) : timerSeconds;
+                    const coinsToAward = Math.floor(elapsed / 10);
                     if (coinsToAward > 0) {
                       setCatCoins(prev => prev + coinsToAward);
-                      const minutes = Math.floor(coinsToAward / 60);
-                      const seconds = coinsToAward % 60;
+                      const minutes = Math.floor(elapsed / 60);
+                      const seconds = elapsed % 60;
                       setMessages(prev => [...prev, { 
                         role: 'cat', 
                         text: `Meow! You studied for ${minutes}m ${seconds}s. Good job!` 
@@ -1390,44 +1729,130 @@ export default function App() {
                     }
                     setIsTimerRunning(false);
                     setTimerSeconds(0);
+                    setTimerStartTime(null);
+                    setShowQuiz(false);
+                    setQuizData(null);
                     setCurrentView('map');
                   }} 
                   className="pixel-button p-2"
                 >
                   <ArrowLeft size={16} />
                 </button>
-                <div className="font-pixel text-[10px] text-retro-accent">
-                  {selectedLevel.title} - {levelProgress + 1}/{selectedLevel.content.length}
+                <div className="font-sans font-bold text-xs text-retro-accent">
+                  {selectedLevel.title}
                 </div>
               </div>
 
-              <div className="bg-retro-surface p-12 pixel-border text-center space-y-8">
-                <motion.div
-                  key={levelProgress}
-                  initial={{ scale: 0.8, opacity: 0 }}
-                  animate={{ scale: 1, opacity: 1 }}
-                  className="space-y-4"
-                >
-                  <div className="text-8xl font-bold text-retro-accent mb-4">
-                    {selectedLevel.content[levelProgress].char}
-                  </div>
-                  <div className="font-pixel text-xl text-retro-primary uppercase tracking-widest">
-                    {selectedLevel.content[levelProgress].pinyin}
-                  </div>
-                  <div className="text-2xl text-retro-text opacity-80">
-                    {selectedLevel.content[levelProgress].meaning}
-                  </div>
-                </motion.div>
-
-                <div className="flex justify-center gap-4">
-                  <button onClick={() => speak(selectedLevel.content[levelProgress].char)} className="pixel-button">
-                    <Volume2 size={20} />
-                  </button>
-                  <button onClick={nextStep} className="pixel-button flex items-center gap-2">
-                    <span>{levelProgress === selectedLevel.content.length - 1 ? 'FINISH' : 'NEXT'}</span>
-                    <ChevronRight size={16} />
-                  </button>
+              {/* Lesson Progress Bar */}
+              <div className="space-y-2 bg-retro-surface p-4 pixel-border">
+                <div className="flex justify-between items-end">
+                  <span className="font-sans font-bold text-[10px] text-retro-primary uppercase">Lesson Progress</span>
+                  <span className="font-sans font-bold text-[10px] text-retro-accent">
+                    {showQuiz ? selectedLevel.content.length : levelProgress + 1} / {selectedLevel.content.length} Words
+                  </span>
                 </div>
+                <div className="w-full h-3 bg-retro-bg pixel-border overflow-hidden">
+                  <motion.div 
+                    initial={{ width: 0 }}
+                    animate={{ width: `${((showQuiz ? selectedLevel.content.length : levelProgress + 1) / selectedLevel.content.length) * 100}%` }}
+                    className="h-full bg-retro-accent"
+                  />
+                </div>
+                <div className="flex justify-between">
+                  <span className="font-sans font-bold text-[8px] text-retro-primary opacity-60 uppercase">
+                    {showQuiz ? 0 : selectedLevel.content.length - (levelProgress + 1)} Remaining
+                  </span>
+                  {showQuiz && (
+                    <span className="font-sans font-bold text-[8px] text-yellow-500 animate-pulse uppercase">
+                      Final Challenge!
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              <div className="bg-retro-surface p-12 pixel-border text-center space-y-8 min-h-[400px] flex flex-col justify-center">
+                <AnimatePresence mode="wait">
+                  {showQuiz && quizData ? (
+                    <motion.div
+                      key="quiz"
+                      initial={{ opacity: 0, scale: 0.9 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      exit={{ opacity: 0, scale: 1.1 }}
+                      className="space-y-8"
+                    >
+                      <div className="space-y-4">
+                        <div className="font-sans font-bold text-xs text-retro-accent uppercase tracking-widest">Knowledge Check</div>
+                        <h3 className="text-3xl font-bold text-retro-text">{quizData.question}</h3>
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-md mx-auto">
+                        {quizData.options.map((option, idx) => (
+                          <button
+                            key={idx}
+                            onClick={() => handleQuizAnswer(option)}
+                            disabled={quizFeedback !== null}
+                            className={`pixel-button p-4 text-sm transition-all ${
+                              quizFeedback === 'correct' && option === quizData.answer ? 'bg-green-500 border-green-700 text-white' :
+                              quizFeedback === 'incorrect' && option !== quizData.answer ? 'bg-red-500 border-red-700 text-white opacity-50' :
+                              'hover:bg-retro-accent hover:text-white'
+                            }`}
+                          >
+                            {option}
+                          </button>
+                        ))}
+                      </div>
+
+                      {quizFeedback === 'correct' && (
+                        <motion.div 
+                          initial={{ y: 10, opacity: 0 }}
+                          animate={{ y: 0, opacity: 1 }}
+                          className="font-sans font-bold text-green-500 text-xs animate-bounce"
+                        >
+                          PURR-FECT! +10 BONUS COINS!
+                        </motion.div>
+                      )}
+                      {quizFeedback === 'incorrect' && (
+                        <motion.div 
+                          initial={{ y: 10, opacity: 0 }}
+                          animate={{ y: 0, opacity: 1 }}
+                          className="font-sans font-bold text-red-500 text-xs"
+                        >
+                          MEOW... TRY AGAIN!
+                        </motion.div>
+                      )}
+                    </motion.div>
+                  ) : (
+                    <motion.div
+                      key={levelProgress}
+                      initial={{ scale: 0.8, opacity: 0 }}
+                      animate={{ scale: 1, opacity: 1 }}
+                      exit={{ opacity: 0, scale: 1.1 }}
+                      className="space-y-8"
+                    >
+                      <div className="space-y-4">
+                        <div className="text-8xl font-bold text-retro-accent mb-4">
+                          {selectedLevel.content[levelProgress].char}
+                        </div>
+                        <div className="font-pixel text-xl text-retro-primary uppercase tracking-widest">
+                          {selectedLevel.content[levelProgress].pinyin}
+                        </div>
+                        <div className="text-2xl text-retro-text opacity-80">
+                          {selectedLevel.content[levelProgress].meaning}
+                        </div>
+                      </div>
+
+                      <div className="flex justify-center gap-4">
+                        <button onClick={() => speak(selectedLevel.content[levelProgress].char)} className="pixel-button">
+                          <Volume2 size={20} />
+                        </button>
+                        <button onClick={nextStep} className="pixel-button flex items-center gap-2">
+                          <span>{levelProgress === selectedLevel.content.length - 1 ? 'FINISH' : 'NEXT'}</span>
+                          <ChevronRight size={16} />
+                        </button>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </div>
             </motion.div>
           )}
@@ -1441,17 +1866,17 @@ export default function App() {
               className="space-y-8"
             >
               <section className="bg-retro-surface p-6 pixel-border">
-                <h3 className="font-pixel text-[10px] text-retro-accent mb-6 flex items-center gap-2">
+                <h3 className="font-sans font-bold text-sm text-retro-accent mb-6 flex items-center gap-2">
                   <UserIcon size={16} />
-                  USER_PROFILE
+                  USER PROFILE
                 </h3>
                 <div className="flex items-center gap-4 p-4 bg-retro-bg pixel-border">
                   <div className="w-12 h-12 bg-retro-primary pixel-border flex items-center justify-center">
                     <Github size={24} />
                   </div>
                   <div>
-                    <p className="font-pixel text-[8px] text-retro-text uppercase">CATTO_USER_01</p>
-                    <p className="text-[8px] text-retro-primary uppercase">Status: Online</p>
+                    <p className="font-sans font-bold text-xs text-retro-text uppercase">CATTO_USER_01</p>
+                    <p className="font-sans font-bold text-[10px] text-retro-primary uppercase">Status: Online</p>
                   </div>
                   <button onClick={handleLogout} className="ml-auto p-2 text-retro-border hover:text-red-500 transition-colors">
                     <LogOut size={20} />
@@ -1460,34 +1885,31 @@ export default function App() {
               </section>
 
               <section className="bg-retro-surface p-6 pixel-border">
-                <h3 className="font-pixel text-[10px] text-retro-accent mb-6 flex items-center gap-2">
+                <h3 className="font-sans font-bold text-sm text-retro-accent mb-6 flex items-center gap-2">
                   <SettingsIcon size={16} />
-                  SYSTEM_CONFIG
+                  SYSTEM CONFIG
                 </h3>
                 <div className="space-y-4">
                   <div className="flex items-center justify-between p-4 bg-retro-bg pixel-border">
-                    <span className="font-pixel text-[8px] text-retro-text flex items-center gap-2">
-                      {theme === 'dark' ? <Moon size={12} /> : <Sun size={12} />}
+                    <span className="font-sans font-bold text-xs text-retro-text flex items-center gap-2">
+                      {theme === 'dark' ? <Moon size={12} /> : theme === 'light' ? <Sun size={12} /> : <Sparkles size={12} />}
                       THEME: {theme.toUpperCase()}
                     </span>
                     <button 
                       onClick={toggleTheme}
-                      className={`w-12 h-6 pixel-border relative transition-colors ${theme === 'light' ? 'bg-retro-primary' : 'bg-retro-border'}`}
+                      className="pixel-button text-[10px] py-1"
                     >
-                      <motion.div 
-                        animate={{ x: theme === 'light' ? 24 : 0 }}
-                        className="absolute top-0 left-0 w-6 h-6 bg-white pixel-border" 
-                      />
+                      CYCLE
                     </button>
                   </div>
                   <div className="flex items-center justify-between p-4 bg-retro-bg pixel-border">
-                    <span className="font-pixel text-[8px] text-retro-text">CRT_SCANLINES</span>
+                    <span className="font-sans font-bold text-xs text-retro-text">CRT_SCANLINES</span>
                     <div className="w-12 h-6 bg-retro-primary pixel-border relative">
                       <div className="absolute top-0 right-1 w-4 h-2 bg-white" />
                     </div>
                   </div>
                   <div className="flex items-center justify-between p-4 bg-retro-bg pixel-border">
-                    <span className="font-pixel text-[8px] text-retro-text">AUTO_SYNC</span>
+                    <span className="font-sans font-bold text-xs text-retro-text">AUTO_SYNC</span>
                     <div className="w-12 h-6 bg-retro-primary pixel-border relative">
                       <div className="absolute top-0 right-1 w-4 h-2 bg-white" />
                     </div>
@@ -1496,8 +1918,8 @@ export default function App() {
               </section>
 
               <div className="text-center">
-                <p className="font-pixel text-[8px] text-retro-border">CHINESECATTO ENGINE V2.1.0</p>
-                <p className="font-pixel text-[8px] text-retro-border mt-2">© 2024 PIXELCAT STUDIOS</p>
+                <p className="font-sans font-bold text-[10px] text-retro-border">CHINESECATTO ENGINE V2.1.0</p>
+                <p className="font-sans font-bold text-[10px] text-retro-border mt-2">© 2024 PIXELCAT STUDIOS</p>
               </div>
             </motion.div>
           )}
@@ -1512,7 +1934,7 @@ export default function App() {
             >
               <div className="text-center mb-8">
                 <h2 className="font-pixel text-sm text-retro-accent uppercase tracking-widest mb-2">Cat Shop</h2>
-                <p className="font-pixel text-[6px] text-retro-primary opacity-60">BUY TREATS AND TOYS FOR YOUR CAT</p>
+                <p className="font-sans font-bold text-[10px] text-retro-primary opacity-60 uppercase">Buy treats and toys for your cat</p>
               </div>
 
               <div className="grid grid-cols-1 gap-4">
@@ -1523,8 +1945,8 @@ export default function App() {
                         {item.icon}
                       </div>
                       <div>
-                        <h3 className="font-pixel text-[10px] text-retro-accent">{item.name}</h3>
-                        <p className="font-pixel text-[6px] text-retro-primary opacity-80">{item.description}</p>
+                        <h3 className="font-sans font-bold text-sm text-retro-accent">{item.name}</h3>
+                        <p className="font-sans text-[10px] text-retro-primary opacity-80 font-medium">{item.description}</p>
                       </div>
                     </div>
                     <button 
@@ -1533,19 +1955,19 @@ export default function App() {
                       className={`pixel-button px-4 py-2 flex items-center gap-2 ${catCoins < item.price ? 'opacity-50 grayscale cursor-not-allowed' : ''}`}
                     >
                       <Coins size={12} className="text-yellow-500" />
-                      <span className="font-pixel text-[8px]">{item.price}</span>
+                      <span className="font-sans font-bold text-xs">{item.price}</span>
                     </button>
                   </div>
                 ))}
               </div>
 
               <div className="bg-retro-surface p-6 pixel-border">
-                <h3 className="font-pixel text-[10px] text-retro-accent mb-4 flex items-center gap-2">
+                <h3 className="font-sans font-bold text-sm text-retro-accent mb-4 flex items-center gap-2">
                   <ShoppingBag size={16} />
-                  YOUR_INVENTORY
+                  YOUR INVENTORY
                 </h3>
                 {inventory.length === 0 ? (
-                  <p className="font-pixel text-[6px] text-retro-primary opacity-60 text-center py-4">INVENTORY IS EMPTY</p>
+                  <p className="font-sans text-[10px] text-retro-primary opacity-60 text-center py-4 uppercase font-bold">Inventory is empty</p>
                 ) : (
                   <div className="grid grid-cols-2 gap-2">
                     {inventory.map((inv) => {
@@ -1554,14 +1976,69 @@ export default function App() {
                         <div key={inv.id} className="bg-retro-bg p-2 pixel-border flex items-center gap-2">
                           <span className="text-lg">{item?.icon}</span>
                           <div className="flex-1">
-                            <p className="font-pixel text-[6px] text-retro-accent truncate">{item?.name}</p>
-                            <p className="font-pixel text-[6px] text-retro-primary">QTY: {inv.quantity}</p>
+                            <p className="font-sans font-bold text-[10px] text-retro-accent truncate">{item?.name}</p>
+                            <p className="font-sans font-bold text-[8px] text-retro-primary">QTY: {inv.quantity}</p>
                           </div>
                         </div>
                       );
                     })}
                   </div>
                 )}
+              </div>
+            </motion.div>
+          )}
+
+          {currentView === 'vocabulary' && (
+            <motion.div
+              key="vocabulary"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              className="space-y-6 pb-20"
+            >
+              <div className="text-center mb-8">
+                <h2 className="font-pixel text-sm text-retro-accent uppercase tracking-widest mb-2">Word Library</h2>
+                <p className="font-sans text-[10px] font-bold text-retro-primary opacity-60 uppercase">Master your Chinese vocabulary</p>
+              </div>
+
+              <div className="grid grid-cols-1 gap-1">
+                {VOCABULARY_LIST.map((item, idx) => (
+                  <motion.div
+                    key={idx}
+                    whileHover={{ x: 4 }}
+                    className="bg-retro-surface pixel-border p-1.5 flex items-center gap-3 group cursor-pointer hover:bg-retro-bg transition-colors"
+                    onClick={() => speak(item.char)}
+                  >
+                    <span className="text-xl font-bold text-retro-text w-8 text-center">{item.char}</span>
+                    <div className="flex-1 flex items-center gap-3 min-w-0">
+                      <span className="font-sans font-bold text-sm text-retro-text">{item.pinyin}</span>
+                      <span className="font-sans text-[10px] text-retro-primary font-medium opacity-80 uppercase tracking-tight truncate">{item.meaning}</span>
+                    </div>
+                    <button 
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        speak(item.char);
+                      }}
+                      className="p-1 hover:bg-retro-accent rounded transition-colors"
+                    >
+                      <Volume2 size={14} className="text-retro-primary" />
+                    </button>
+                  </motion.div>
+                ))}
+              </div>
+
+              <div className="bg-retro-surface p-6 pixel-border text-center">
+                <Sparkles className="mx-auto mb-3 text-retro-primary" size={24} />
+                <h3 className="font-sans font-bold text-sm text-retro-accent mb-1">Daily Challenge</h3>
+                <p className="font-sans text-xs text-retro-primary leading-relaxed mb-4">
+                  Learn 5 new words today to earn a special Cat Badge!
+                </p>
+                <button 
+                  onClick={goToMap}
+                  className="pixel-button w-full"
+                >
+                  START LEARNING
+                </button>
               </div>
             </motion.div>
           )}
@@ -1576,7 +2053,7 @@ export default function App() {
             >
               <div className="text-center mb-8">
                 <h2 className="font-pixel text-sm text-retro-accent uppercase tracking-widest mb-2">Cat Library</h2>
-                <p className="font-pixel text-[6px] text-retro-primary opacity-60">COLLECTED MAP CATS</p>
+                <p className="font-sans font-bold text-[10px] text-retro-primary opacity-60 uppercase">Collected Map Cats</p>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
@@ -1599,15 +2076,15 @@ export default function App() {
                           <Lock size={24} className="text-retro-border" />
                         </div>
                       )}
-                      <div className={`absolute top-1 right-1 px-1 py-0.5 font-pixel text-[4px] text-white ${
+                      <div className={`absolute top-1 right-1 px-1 py-0.5 font-sans font-bold text-[8px] text-white ${
                         cat.rarity === 'Legendary' ? 'bg-yellow-500' :
                         cat.rarity === 'Rare' ? 'bg-purple-500' : 'bg-retro-primary'
                       }`}>
                         {cat.rarity}
                       </div>
                     </div>
-                    <h3 className="font-pixel text-[8px] text-retro-accent mb-1">{cat.name}</h3>
-                    <p className="font-pixel text-[5px] text-retro-primary leading-tight">
+                    <h3 className="font-sans font-bold text-xs text-retro-accent mb-1">{cat.name}</h3>
+                    <p className="font-sans text-[10px] text-retro-primary leading-tight font-medium">
                       {cat.description}
                     </p>
                     
@@ -1625,14 +2102,15 @@ export default function App() {
                             return reset.slice(0, 10);
                           });
                           setCurrentView('map');
+                          goToMap();
                         }}
-                        className="mt-3 w-full pixel-button text-[6px] py-1"
+                        className="mt-3 w-full pixel-button text-[10px] py-1"
                       >
                         {cat.unlocked ? 'USE THIS CAT' : 'START QUEST'}
                       </button>
                     )}
                     {activeCatIndex === idx && (
-                      <div className="mt-3 w-full bg-green-500 text-white font-pixel text-[6px] py-1 text-center pixel-border border-green-700">
+                      <div className="mt-3 w-full bg-green-500 text-white font-sans font-bold text-[10px] py-1 text-center pixel-border border-green-700">
                         ACTIVE
                       </div>
                     )}
@@ -1642,8 +2120,8 @@ export default function App() {
 
               <div className="bg-retro-surface p-4 pixel-border">
                 <div className="flex justify-between items-center mb-2">
-                  <span className="font-pixel text-[6px] text-retro-primary uppercase">Collection Progress</span>
-                  <span className="font-pixel text-[6px] text-retro-accent">
+                  <span className="font-sans font-bold text-[10px] text-retro-primary uppercase">Collection Progress</span>
+                  <span className="font-sans font-bold text-[10px] text-retro-accent">
                     {mapCats.filter(c => c.unlocked).length} / {mapCats.length}
                   </span>
                 </div>
@@ -1664,38 +2142,45 @@ export default function App() {
           <div className="max-w-md mx-auto flex justify-around items-center">
             <button 
               onClick={() => setCurrentView('home')}
-              className={`flex flex-col items-center gap-2 transition-colors ${currentView === 'home' ? 'text-retro-accent' : 'text-retro-primary'}`}
+              className={`flex flex-col items-center gap-1 transition-colors ${currentView === 'home' ? 'text-retro-accent' : 'text-retro-primary'}`}
             >
               <HomeIcon size={20} />
-              <span className="font-pixel text-[6px] uppercase">Home</span>
+              <span className="font-sans text-[10px] font-bold uppercase">Home</span>
             </button>
             <button 
-              onClick={() => setCurrentView('map')}
-              className={`flex flex-col items-center gap-2 transition-colors ${currentView === 'map' ? 'text-retro-accent' : 'text-retro-primary'}`}
+              onClick={() => setCurrentView('vocabulary')}
+              className={`flex flex-col items-center gap-1 transition-colors ${currentView === 'vocabulary' ? 'text-retro-accent' : 'text-retro-primary'}`}
+            >
+              <Book size={20} />
+              <span className="font-sans text-[10px] font-bold uppercase">Vocab</span>
+            </button>
+            <button 
+              onClick={goToMap}
+              className={`flex flex-col items-center gap-1 transition-colors ${currentView === 'map' ? 'text-retro-accent' : 'text-retro-primary'}`}
             >
               <MapIcon size={20} />
-              <span className="font-pixel text-[6px] uppercase">Map</span>
+              <span className="font-sans text-[10px] font-bold uppercase">Map</span>
             </button>
             <button 
               onClick={() => setCurrentView('library')}
-              className={`flex flex-col items-center gap-2 transition-colors ${currentView === 'library' ? 'text-retro-accent' : 'text-retro-primary'}`}
+              className={`flex flex-col items-center gap-1 transition-colors ${currentView === 'library' ? 'text-retro-accent' : 'text-retro-primary'}`}
             >
               <Cat size={20} />
-              <span className="font-pixel text-[6px] uppercase">Library</span>
+              <span className="font-sans text-[10px] font-bold uppercase">Library</span>
             </button>
             <button 
               onClick={() => setCurrentView('shop')}
-              className={`flex flex-col items-center gap-2 transition-colors ${currentView === 'shop' ? 'text-retro-accent' : 'text-retro-primary'}`}
+              className={`flex flex-col items-center gap-1 transition-colors ${currentView === 'shop' ? 'text-retro-accent' : 'text-retro-primary'}`}
             >
               <ShoppingBag size={20} />
-              <span className="font-pixel text-[6px] uppercase">Shop</span>
+              <span className="font-sans text-[10px] font-bold uppercase">Shop</span>
             </button>
             <button 
               onClick={() => setCurrentView('settings')}
-              className={`flex flex-col items-center gap-2 transition-colors ${currentView === 'settings' ? 'text-retro-accent' : 'text-retro-primary'}`}
+              className={`flex flex-col items-center gap-1 transition-colors ${currentView === 'settings' ? 'text-retro-accent' : 'text-retro-primary'}`}
             >
               <SettingsIcon size={20} />
-              <span className="font-pixel text-[6px] uppercase">Settings</span>
+              <span className="font-sans text-[10px] font-bold uppercase">Settings</span>
             </button>
           </div>
         </nav>

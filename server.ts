@@ -23,7 +23,13 @@ db.exec(`
     username TEXT,
     avatar_url TEXT,
     cat_coins INTEGER DEFAULT 0,
-    inventory TEXT DEFAULT '[]'
+    inventory TEXT DEFAULT '[]',
+    last_income_sync INTEGER,
+    mood INTEGER DEFAULT 100,
+    current_map_level INTEGER DEFAULT 1,
+    timer_start_time INTEGER,
+    streak_count INTEGER DEFAULT 0,
+    last_streak_date TEXT
   );
 
   CREATE TABLE IF NOT EXISTS words (
@@ -80,8 +86,120 @@ if (!columns.includes('inventory')) {
     console.error('Failed to add inventory column:', e.message);
   }
 }
+if (!columns.includes('last_income_sync')) {
+  try { 
+    console.log('Adding last_income_sync column...');
+    db.exec("ALTER TABLE users ADD COLUMN last_income_sync INTEGER"); 
+    console.log('Last_income_sync column added successfully.');
+  } catch(e: any) {
+    console.error('Failed to add last_income_sync column:', e.message);
+  }
+}
+if (!columns.includes('mood')) {
+  try { 
+    console.log('Adding mood column...');
+    db.exec("ALTER TABLE users ADD COLUMN mood INTEGER DEFAULT 100"); 
+    console.log('Mood column added successfully.');
+  } catch(e: any) {
+    console.error('Failed to add mood column:', e.message);
+  }
+}
+if (!columns.includes('current_map_level')) {
+  try { 
+    console.log('Adding current_map_level column...');
+    db.exec("ALTER TABLE users ADD COLUMN current_map_level INTEGER DEFAULT 1"); 
+    console.log('Current_map_level column added successfully.');
+  } catch(e: any) {
+    console.error('Failed to add current_map_level column:', e.message);
+  }
+}
+if (!columns.includes('timer_start_time')) {
+  try { 
+    console.log('Adding timer_start_time column...');
+    db.exec("ALTER TABLE users ADD COLUMN timer_start_time INTEGER"); 
+    console.log('Timer_start_time column added successfully.');
+  } catch(e: any) {
+    console.error('Failed to add timer_start_time column:', e.message);
+  }
+}
+if (!columns.includes('streak_count')) {
+  try { 
+    console.log('Adding streak_count column...');
+    db.exec("ALTER TABLE users ADD COLUMN streak_count INTEGER DEFAULT 0"); 
+    console.log('Streak_count column added successfully.');
+  } catch(e: any) {
+    console.error('Failed to add streak_count column:', e.message);
+  }
+}
+if (!columns.includes('last_streak_date')) {
+  try { 
+    console.log('Adding last_streak_date column...');
+    db.exec("ALTER TABLE users ADD COLUMN last_streak_date TEXT"); 
+    console.log('Last_streak_date column added successfully.');
+  } catch(e: any) {
+    console.error('Failed to add last_streak_date column:', e.message);
+  }
+}
 
 import fs from 'fs';
+
+function calculatePassiveIncome(user: any) {
+  const now = Date.now();
+  const lastSync = user.last_income_sync || now;
+  const elapsedMs = now - lastSync;
+  const elapsedMinutes = Math.floor(elapsedMs / (1000 * 60));
+  
+  // Rate: 1 coin per 1 minute
+  const coinsToAward = Math.floor(elapsedMinutes / 1);
+  
+  if (coinsToAward > 0) {
+    const newCoins = (user.cat_coins || 0) + coinsToAward;
+    db.prepare('UPDATE users SET cat_coins = ?, last_income_sync = ? WHERE id = ?')
+      .run(newCoins, now, user.id);
+    user.cat_coins = newCoins;
+    user.last_income_sync = now;
+    user.passive_earned = coinsToAward; // Flag for frontend
+  } else if (elapsedMs > 1000 * 60) {
+    db.prepare('UPDATE users SET last_income_sync = ? WHERE id = ?')
+      .run(now, user.id);
+    user.last_income_sync = now;
+  }
+  return user;
+}
+
+function updateStreak(user: any) {
+  const today = new Date().toISOString().split('T')[0];
+  const lastDate = user.last_streak_date;
+  
+  if (lastDate === today) return { streak_updated: false };
+
+  const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0];
+  let newStreak = 1;
+  let rewardCoins = 50; // Base reward
+  let rewardMood = 10;
+
+  if (lastDate === yesterday) {
+    newStreak = (user.streak_count || 0) + 1;
+    // Bonus for longer streaks
+    rewardCoins += Math.min(newStreak * 10, 200);
+    rewardMood += Math.min(newStreak * 2, 30);
+  }
+
+  db.prepare('UPDATE users SET streak_count = ?, last_streak_date = ?, cat_coins = cat_coins + ?, mood = MIN(100, mood + ?) WHERE id = ?')
+    .run(newStreak, today, rewardCoins, rewardMood, user.id);
+  
+  user.streak_count = newStreak;
+  user.last_streak_date = today;
+  user.cat_coins += rewardCoins;
+  user.mood = Math.min(100, user.mood + rewardMood);
+
+  return { 
+    streak_updated: true, 
+    new_streak: newStreak, 
+    reward_coins: rewardCoins,
+    reward_mood: rewardMood
+  };
+}
 
 async function startServer() {
   try {
@@ -123,28 +241,34 @@ async function startServer() {
 
   app.post('/api/auth/register', (req, res) => {
     const { email, password } = req.body;
-    console.log(`Register attempt for: ${email}`);
     if (!email || !password) return res.status(400).json({ error: 'Missing fields' });
+    
+    const normalizedEmail = email.toLowerCase().trim();
+    console.log(`Register attempt for: ${normalizedEmail}`);
 
     try {
-      const id = crypto.randomUUID();
-      const username = email.split('@')[0];
-      const avatar_url = `https://api.dicebear.com/7.x/pixel-art/svg?seed=${email}`;
-      
-      db.prepare('INSERT INTO users (id, email, password, username, avatar_url) VALUES (?, ?, ?, ?, ?)')
-        .run(id, email, password, username, avatar_url);
-      
-      const user = { id, email, username, avatar_url, cat_coins: 0, inventory: '[]' };
-      (req.session as any).userId = id;
-      (req.session as any).user = user;
-      console.log(`User registered successfully: ${id}`);
-      res.json({ user });
-    } catch (e: any) {
-      console.error(`Registration error for ${email}:`, e.message);
-      if (e.message.includes('UNIQUE constraint failed')) {
-        return res.status(400).json({ error: 'Email already exists' });
+      // Check if user already exists
+      const existingUser = db.prepare('SELECT id FROM users WHERE email = ?').get(normalizedEmail);
+      if (existingUser) {
+        return res.status(400).json({ error: 'This email is already registered. Please sign in instead!' });
       }
-      res.status(500).json({ error: 'Registration failed' });
+
+      const id = crypto.randomUUID();
+      const username = normalizedEmail.split('@')[0];
+      const avatar_url = `https://api.dicebear.com/7.x/pixel-art/svg?seed=${normalizedEmail}`;
+      const now = Date.now();
+      
+      db.prepare('INSERT INTO users (id, email, password, username, avatar_url, last_income_sync) VALUES (?, ?, ?, ?, ?, ?)')
+        .run(id, normalizedEmail, password, username, avatar_url, now);
+      
+      const userWithIncome = calculatePassiveIncome({ id, email: normalizedEmail, username, avatar_url, cat_coins: 0, inventory: '[]', mood: 100, current_map_level: 1, last_income_sync: now });
+      (req.session as any).userId = id;
+      (req.session as any).user = userWithIncome;
+      console.log(`User registered successfully: ${id}`);
+      res.json({ user: userWithIncome });
+    } catch (e: any) {
+      console.error(`Registration system error for ${email}:`, e.message);
+      res.status(500).json({ error: 'Registration failed. Please try again later.' });
     }
   });
 
@@ -159,10 +283,11 @@ async function startServer() {
       return res.status(401).json({ error: 'Invalid credentials' });
     }
 
-    (req.session as any).userId = user.id;
-    (req.session as any).user = user;
-    console.log(`User logged in successfully: ${user.id}`);
-    res.json({ user });
+    const userWithIncome = calculatePassiveIncome(user);
+    (req.session as any).userId = userWithIncome.id;
+    (req.session as any).user = userWithIncome;
+    console.log(`User logged in successfully: ${userWithIncome.id}`);
+    res.json({ user: userWithIncome });
   });
 
   app.get('/api/auth/github/url', (req, res) => {
@@ -198,20 +323,38 @@ async function startServer() {
       });
 
       const githubUser = userResponse.data;
-      const email = githubUser.email || `${githubUser.login}@github.com`;
+      const email = (githubUser.email || `${githubUser.login}@github.com`).toLowerCase();
 
       // Upsert user in DB
       let user = db.prepare('SELECT * FROM users WHERE github_id = ?').get(githubUser.id) as any;
+      
       if (!user) {
-        const id = crypto.randomUUID();
-        db.prepare('INSERT INTO users (id, github_id, username, avatar_url, email) VALUES (?, ?, ?, ?, ?)')
-          .run(id, githubUser.id, githubUser.login, githubUser.avatar_url, email);
-        user = { id, github_id: githubUser.id, username: githubUser.login, avatar_url: githubUser.avatar_url, email };
+        // Check if a user with this email already exists (e.g. registered via password)
+        const existingByEmail = db.prepare('SELECT * FROM users WHERE email = ?').get(email) as any;
+        
+        if (existingByEmail) {
+          // Link GitHub to existing email account
+          db.prepare('UPDATE users SET github_id = ?, avatar_url = ? WHERE id = ?')
+            .run(githubUser.id, githubUser.avatar_url, existingByEmail.id);
+          user = { ...existingByEmail, github_id: githubUser.id, avatar_url: githubUser.avatar_url };
+          console.log(`Linked GitHub account ${githubUser.id} to existing user ${user.id}`);
+        } else {
+          // Create new user
+          const id = crypto.randomUUID();
+          const now = Date.now();
+          db.prepare('INSERT INTO users (id, github_id, username, avatar_url, email, last_income_sync) VALUES (?, ?, ?, ?, ?, ?)')
+            .run(id, githubUser.id, githubUser.login, githubUser.avatar_url, email, now);
+          user = { id, github_id: githubUser.id, username: githubUser.login, avatar_url: githubUser.avatar_url, email, last_income_sync: now, mood: 100, current_map_level: 1 };
+          console.log(`Created new user via GitHub: ${id}`);
+        }
       }
 
+      // Calculate passive income for GitHub user
+      const userWithIncome = calculatePassiveIncome(user);
+
       // Set session
-      (req.session as any).userId = user.id;
-      (req.session as any).user = user;
+      (req.session as any).userId = userWithIncome.id;
+      (req.session as any).user = userWithIncome;
 
       res.send(`
         <html>
@@ -239,18 +382,32 @@ async function startServer() {
     if (!userId) return res.json({ user: null });
     
     const user = db.prepare('SELECT * FROM users WHERE id = ?').get(userId) as any;
-    res.json({ user });
+    if (!user) return res.json({ user: null });
+
+    const userWithIncome = calculatePassiveIncome(user);
+    // Check streak on login/refresh
+    const streakResult = updateStreak(userWithIncome);
+    res.json({ user: userWithIncome, streak: streakResult });
   });
 
   app.post('/api/user/sync', (req, res) => {
     const userId = (req.session as any).userId;
     if (!userId) return res.status(401).json({ error: 'Unauthorized' });
 
-    const { cat_coins, inventory } = req.body;
-    db.prepare('UPDATE users SET cat_coins = ?, inventory = ? WHERE id = ?')
-      .run(cat_coins, JSON.stringify(inventory), userId);
+    const user = db.prepare('SELECT * FROM users WHERE id = ?').get(userId) as any;
+    if (!user) return res.status(404).json({ error: 'User not found' });
+
+    const { cat_coins, inventory, mood, current_map_level, timer_start_time } = req.body;
+    const now = Date.now();
     
-    res.json({ success: true });
+    // Update basic stats
+    db.prepare('UPDATE users SET cat_coins = ?, inventory = ?, mood = ?, current_map_level = ?, timer_start_time = ?, last_income_sync = ? WHERE id = ?')
+      .run(cat_coins, JSON.stringify(inventory), mood ?? 100, current_map_level ?? 1, timer_start_time ?? null, now, userId);
+    
+    // Also trigger streak update if they are active
+    const streakResult = updateStreak(user);
+    
+    res.json({ success: true, streak: streakResult });
   });
 
   app.post('/api/auth/logout', (req, res) => {
