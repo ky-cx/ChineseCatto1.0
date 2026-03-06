@@ -123,19 +123,18 @@ async function startServer() {
 
   app.post('/api/auth/register', (req, res) => {
     const { email, password } = req.body;
-    const cleanEmail = email.trim().toLowerCase();
-    console.log(`Register attempt for: ${cleanEmail}`);
-    if (!cleanEmail || !password) return res.status(400).json({ error: 'Missing fields' });
+    console.log(`Register attempt for: ${email}`);
+    if (!email || !password) return res.status(400).json({ error: 'Missing fields' });
 
     try {
       const id = crypto.randomUUID();
-      const username = cleanEmail.split('@')[0];
-      const avatar_url = `https://api.dicebear.com/7.x/pixel-art/svg?seed=${cleanEmail}`;
+      const username = email.split('@')[0];
+      const avatar_url = `https://api.dicebear.com/7.x/pixel-art/svg?seed=${email}`;
       
       db.prepare('INSERT INTO users (id, email, password, username, avatar_url) VALUES (?, ?, ?, ?, ?)')
-        .run(id, cleanEmail, password, username, avatar_url);
+        .run(id, email, password, username, avatar_url);
       
-      const user = { id, email: cleanEmail, username, avatar_url, cat_coins: 0, inventory: '[]' };
+      const user = { id, email, username, avatar_url, cat_coins: 0, inventory: '[]' };
       (req.session as any).userId = id;
       (req.session as any).user = user;
       console.log(`User registered successfully: ${id}`);
@@ -150,26 +149,14 @@ async function startServer() {
   });
 
   app.post('/api/auth/login', (req, res) => {
-    console.log('--- LOGIN ROUTE V2.1 ---');
     const { email, password } = req.body;
+    console.log(`Login attempt for: ${email}`);
     if (!email || !password) return res.status(400).json({ error: 'Missing fields' });
-    const cleanEmail = email.trim().toLowerCase();
-    console.log(`Login attempt for: ${cleanEmail}`);
 
-    const user = db.prepare('SELECT * FROM users WHERE email = ?').get(cleanEmail) as any;
+    const user = db.prepare('SELECT * FROM users WHERE email = ? AND password = ?').get(email, password) as any;
     if (!user) {
-      console.log(`Login failed for: ${cleanEmail} - User not found`);
-      return res.status(401).json({ error: 'User not found. Please register first!' });
-    }
-
-    if (!user.password) {
-      console.log(`Login failed for: ${cleanEmail} - User has no password (GitHub account?)`);
-      return res.status(401).json({ error: 'This account was created via GitHub. Please use GitHub login!' });
-    }
-
-    if (user.password !== password) {
-      console.log(`Login failed for: ${cleanEmail} - Password mismatch`);
-      return res.status(401).json({ error: 'Invalid password. Please try again!' });
+      console.log(`Login failed for: ${email} - Invalid credentials`);
+      return res.status(401).json({ error: 'Invalid credentials' });
     }
 
     (req.session as any).userId = user.id;
