@@ -11,7 +11,8 @@ import crypto from 'crypto';
 dotenv.config();
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const db = new Database('chinese_catto.db');
+const dbPath = process.env.RENDER ? '/var/data/chinese_catto.db' : 'chinese_catto.db';
+const db = new Database(dbPath);
 
 // Initialize Database
 db.exec(`
