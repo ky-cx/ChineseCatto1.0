@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Plus, Trash2, Book, Sparkles, Volume2, Github, LogOut, User as UserIcon, Map as MapIcon, Settings as SettingsIcon, Home as HomeIcon, ChevronRight, Lock, MessageSquare, Send, Loader2, Sun, Moon, ArrowLeft, CheckCircle2, Cat, ShoppingBag, Timer, Play, Pause, Square, Coins, Heart, Flame, Turtle } from 'lucide-react';
+import { Plus, Trash2, Book, Sparkles, Volume2, Github, LogOut, User as UserIcon, Map as MapIcon, Settings as SettingsIcon, Home as HomeIcon, ChevronRight, Lock, MessageSquare, Send, Loader2, Sun, Moon, ArrowLeft, CheckCircle2, Cat, ShoppingBag, Timer, Play, Pause, Square, Coins, Heart, Flame, Turtle, Utensils } from 'lucide-react';
 import { GoogleGenAI } from "@google/genai";
 
 type View = 'home' | 'map' | 'settings' | 'level' | 'library' | 'shop' | 'vocabulary' | 'flashcards';
@@ -449,61 +449,6 @@ const VOCABULARY_LIST = [
   { char: '小', pinyin: 'xiǎo', meaning: 'Small' },
 ];
 
-interface Activity {
-  date: string;
-  count: number;
-}
-
-const ContributionGraph = ({ activity }: { activity: Activity[] }) => {
-  const today = new Date();
-  const days = Array.from({ length: 91 }, (_, i) => {
-    const date = new Date();
-    date.setDate(today.getDate() - (90 - i));
-    return date.toISOString().split('T')[0];
-  });
-
-  const getActivityCount = (date: string) => {
-    return activity.find(a => a.date === date)?.count || 0;
-  };
-
-  const getColor = (count: number) => {
-    if (count === 0) return 'bg-retro-bg opacity-20';
-    if (count < 2) return 'bg-green-200';
-    if (count < 4) return 'bg-green-400';
-    if (count < 6) return 'bg-green-600';
-    return 'bg-green-800';
-  };
-
-  return (
-    <div className="bg-retro-surface p-4 pixel-border">
-      <div className="flex justify-between items-center mb-3">
-        <h3 className="font-pixel text-[8px] text-retro-accent uppercase tracking-widest">Learning Activity</h3>
-        <div className="flex gap-1 items-center">
-          <span className="text-[6px] text-retro-primary opacity-60 uppercase">Less</span>
-          <div className="w-2 h-2 bg-retro-bg opacity-20 pixel-border" />
-          <div className="w-2 h-2 bg-green-200 pixel-border" />
-          <div className="w-2 h-2 bg-green-400 pixel-border" />
-          <div className="w-2 h-2 bg-green-600 pixel-border" />
-          <div className="w-2 h-2 bg-green-800 pixel-border" />
-          <span className="text-[6px] text-retro-primary opacity-60 uppercase">More</span>
-        </div>
-      </div>
-      <div className="grid grid-flow-col grid-rows-7 gap-1 overflow-x-auto pb-2 scrollbar-hide">
-        {days.map(date => {
-          const count = getActivityCount(date);
-          return (
-            <div
-              key={date}
-              className={`w-3 h-3 pixel-border ${getColor(count)}`}
-              title={`${date}: ${count} activities`}
-            />
-          );
-        })}
-      </div>
-    </div>
-  );
-};
-
 export default function App() {
   const [currentView, setCurrentView] = useState<View>('home');
   const [homeSubView, setHomeSubView] = useState<HomeSubView>('chat');
@@ -650,7 +595,6 @@ export default function App() {
   const [isTimerRunning, setIsTimerRunning] = useState(false);
   const [timerSeconds, setTimerSeconds] = useState(0);
   const [streak, setStreak] = useState<number>(0);
-  const [activity, setActivity] = useState<Activity[]>([]);
   const [studyStats, setStudyStats] = useState<{ total: number; today: number }>({ total: 0, today: 0 });
   const lastSyncedSecondsRef = useRef<number>(0);
 
@@ -747,19 +691,6 @@ export default function App() {
     }
   }, [user]);
 
-  const fetchActivity = useCallback(async () => {
-    if (!user) return;
-    try {
-      const res = await fetch('/api/user/activity');
-      if (res.ok) {
-        const data = await res.json();
-        setActivity(data);
-      }
-    } catch (e) {
-      console.error('Failed to fetch activity', e);
-    }
-  }, [user]);
-
   const fetchStudyStats = useCallback(async () => {
     if (!user) return;
     try {
@@ -780,10 +711,6 @@ export default function App() {
   useEffect(() => {
     fetchWords();
   }, [fetchWords]);
-
-  useEffect(() => {
-    fetchActivity();
-  }, [fetchActivity]);
 
   useEffect(() => {
     if (currentView === 'settings') {
@@ -838,12 +765,11 @@ export default function App() {
           setStreak(data.streak.new_streak);
           setCatCoins(prev => prev + data.streak.reward_coins);
           setMood(prev => Math.min(100, prev + data.streak.reward_mood));
-          fetchActivity(); // Refresh activity graph
         }
       })
       .catch(e => console.error('Failed to sync with backend', e));
     }
-  }, [levels, mapCats, activeCatIndex, catCoins, inventory, mood, currentMapLevel, timerStartTime, user, fetchActivity, timerSeconds]);
+  }, [levels, mapCats, activeCatIndex, catCoins, inventory, mood, currentMapLevel, timerStartTime, user, timerSeconds]);
 
   // Real-time Passive Income Tick & Mood Decay
   useEffect(() => {
@@ -973,6 +899,23 @@ export default function App() {
       };
     }
   }, [currentView]);
+
+  const handleFeedCat = () => {
+    const FEED_COST = 50;
+    if (catCoins >= FEED_COST) {
+      setCatCoins(prev => prev - FEED_COST);
+      setMood(prev => Math.min(100, prev + 15));
+      setMessages(prev => [...prev, { 
+        role: 'cat', 
+        text: 'Meow! *Munch munch* That was delicious! I feel much better now! Purrr~' 
+      }]);
+    } else {
+      setMessages(prev => [...prev, { 
+        role: 'cat', 
+        text: `Meow... I'm hungry, but you need ${FEED_COST} coins to buy me some premium tuna! Keep studying!` 
+      }]);
+    }
+  };
 
   const startLevel = (level: Level) => {
     if (level.status === 'locked') return;
@@ -1520,9 +1463,6 @@ export default function App() {
               exit={{ opacity: 0, x: 20 }}
               className="space-y-6"
             >
-              {/* Contribution Graph */}
-              <ContributionGraph activity={activity} />
-
               {/* Header */}
               <header className="text-center mb-8">
                 <motion.div
@@ -1594,6 +1534,15 @@ export default function App() {
                         placeholder="Say something to Catto..."
                         className="flex-1 pixel-input text-sm"
                       />
+                      <button 
+                        type="button" 
+                        onClick={handleFeedCat}
+                        className="pixel-button px-4 bg-retro-accent flex items-center gap-2"
+                        title="Feed Catto (50 Coins)"
+                      >
+                        <Utensils size={16} />
+                        <span className="hidden md:inline">Feed</span>
+                      </button>
                       <button type="submit" className="pixel-button px-4">
                         <Send size={16} />
                       </button>

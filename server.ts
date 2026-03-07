@@ -11,9 +11,7 @@ import crypto from 'crypto';
 dotenv.config();
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const dbPath = path.resolve(__dirname, 'chinese_catto.db');
-console.log('Database path:', dbPath);
-const db = new Database(dbPath, { fileMustExist: false });
+const db = new Database('chinese_catto.db');
 
 // Initialize Database
 db.exec(`
