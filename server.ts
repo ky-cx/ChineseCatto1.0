@@ -11,8 +11,7 @@ import crypto from 'crypto';
 dotenv.config();
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const dbPath = process.env.RENDER ? '/var/data/chinese_catto.db' : 'chinese_catto.db';
-const db = new Database(dbPath);
+const db = new Database('chinese_catto.db');
 
 // Initialize Database
 db.exec(`
@@ -31,6 +30,14 @@ db.exec(`
     timer_start_time INTEGER,
     streak_count INTEGER DEFAULT 0,
     last_streak_date TEXT
+  );
+
+  CREATE TABLE IF NOT EXISTS activity (
+    user_id TEXT,
+    date TEXT,
+    count INTEGER DEFAULT 0,
+    PRIMARY KEY(user_id, date),
+    FOREIGN KEY(user_id) REFERENCES users(id)
   );
 
   CREATE TABLE IF NOT EXISTS words (
@@ -405,11 +412,24 @@ async function startServer() {
     db.prepare('UPDATE users SET cat_coins = ?, inventory = ?, mood = ?, current_map_level = ?, timer_start_time = ?, last_income_sync = ? WHERE id = ?')
       .run(cat_coins, JSON.stringify(inventory), mood ?? 100, current_map_level ?? 1, timer_start_time ?? null, now, userId);
     
-    // Also trigger streak update if they are active
-    const streakResult = updateStreak(user);
-    
-    res.json({ success: true, streak: streakResult });
-  });
+  // Also trigger streak update if they are active
+  const streakResult = updateStreak(user);
+
+  // Record activity for today
+  const today = new Date().toISOString().split('T')[0];
+  db.prepare('INSERT INTO activity (user_id, date, count) VALUES (?, ?, 1) ON CONFLICT(user_id, date) DO UPDATE SET count = count + 1')
+    .run(userId, today);
+  
+  res.json({ success: true, streak: streakResult });
+});
+
+app.get('/api/user/activity', (req, res) => {
+  const userId = (req.session as any).userId;
+  if (!userId) return res.status(401).json({ error: 'Unauthorized' });
+
+  const activity = db.prepare('SELECT date, count FROM activity WHERE user_id = ? ORDER BY date ASC').all(userId);
+  res.json(activity);
+});
 
   app.post('/api/auth/logout', (req, res) => {
     req.session.destroy(() => {

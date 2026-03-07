@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Plus, Trash2, Book, Sparkles, Volume2, Github, LogOut, User as UserIcon, Map as MapIcon, Settings as SettingsIcon, Home as HomeIcon, ChevronRight, Lock, MessageSquare, Send, Loader2, Sun, Moon, ArrowLeft, CheckCircle2, Cat, ShoppingBag, Timer, Play, Pause, Square, Coins, Heart, Flame } from 'lucide-react';
+import { Plus, Trash2, Book, Sparkles, Volume2, Github, LogOut, User as UserIcon, Map as MapIcon, Settings as SettingsIcon, Home as HomeIcon, ChevronRight, Lock, MessageSquare, Send, Loader2, Sun, Moon, ArrowLeft, CheckCircle2, Cat, ShoppingBag, Timer, Play, Pause, Square, Coins, Heart, Flame, Turtle } from 'lucide-react';
 import { GoogleGenAI } from "@google/genai";
 
 type View = 'home' | 'map' | 'settings' | 'level' | 'library' | 'shop' | 'vocabulary';
@@ -36,7 +36,7 @@ interface Level {
   description: string;
   status: 'locked' | 'current' | 'completed';
   animalType: string;
-  content: { char: string; pinyin: string; meaning: string }[];
+  content: { char: string; pinyin: string; meaning: string; example?: string; exampleMeaning?: string }[];
   order: number;
 }
 
@@ -255,13 +255,62 @@ const PixelCat = ({ className = "", animated = true }: { className?: string; ani
 );
 
 const TOPICS = [
-  { title: 'Numbers', desc: '1-10', content: [{ char: '一', pinyin: 'yī', meaning: 'One' }, { char: '二', pinyin: 'èr', meaning: 'Two' }, { char: '三', pinyin: 'sān', meaning: 'Three' }, { char: '四', pinyin: 'sì', meaning: 'Four' }, { char: '五', pinyin: 'wǔ', meaning: 'Five' }, { char: '六', pinyin: 'liù', meaning: 'Six' }, { char: '七', pinyin: 'qī', meaning: 'Seven' }, { char: '八', pinyin: 'bā', meaning: 'Eight' }, { char: '九', pinyin: 'jiǔ', meaning: 'Nine' }, { char: '十', pinyin: 'shí', meaning: 'Ten' }] },
-  { title: 'Greetings', desc: 'Basic hellos', content: [{ char: '你好', pinyin: 'nǐ hǎo', meaning: 'Hello' }, { char: '谢谢', pinyin: 'xièxie', meaning: 'Thank you' }, { char: '不客气', pinyin: 'bú kèqi', meaning: "You're welcome" }, { char: '再见', pinyin: 'zàijiàn', meaning: 'Goodbye' }] },
-  { title: 'Family', desc: 'Mom and Dad', content: [{ char: '爸爸', pinyin: 'bàba', meaning: 'Dad' }, { char: '妈妈', pinyin: 'māma', meaning: 'Mom' }, { char: '哥哥', pinyin: 'gēge', meaning: 'Older Brother' }, { char: '姐姐', pinyin: 'jiějie', meaning: 'Older Sister' }] },
-  { title: 'Food', desc: 'Common dishes', content: [{ char: '米饭', pinyin: 'mǐfàn', meaning: 'Rice' }, { char: '面条', pinyin: 'miàntiáo', meaning: 'Noodles' }, { char: '水', pinyin: 'shuǐ', meaning: 'Water' }, { char: '茶', pinyin: 'chá', meaning: 'Tea' }] },
-  { title: 'Animals', desc: 'Pets and more', content: [{ char: '猫', pinyin: 'māo', meaning: 'Cat' }, { char: '狗', pinyin: 'gǒu', meaning: 'Dog' }, { char: '鸟', pinyin: 'niǎo', meaning: 'Bird' }, { char: '鱼', pinyin: 'yú', meaning: 'Fish' }] },
-  { title: 'Colors', desc: 'Rainbow colors', content: [{ char: '红', pinyin: 'hóng', meaning: 'Red' }, { char: '蓝', pinyin: 'lán', meaning: 'Blue' }, { char: '绿', pinyin: 'lǜ', meaning: 'Green' }, { char: '黄', pinyin: 'huáng', meaning: 'Yellow' }] },
-  { title: 'Nature', desc: 'Sun and Moon', content: [{ char: '日', pinyin: 'rì', meaning: 'Sun' }, { char: '月', pinyin: 'yuè', meaning: 'Moon' }, { char: '山', pinyin: 'shān', meaning: 'Mountain' }, { char: '水', pinyin: 'shuǐ', meaning: 'Water' }] },
+  { 
+    title: 'Numbers', 
+    desc: '1-10', 
+    content: [
+      { char: '一', pinyin: 'yī', meaning: 'One', example: '我有一个苹果。', exampleMeaning: 'I have one apple.' }, 
+      { char: '二', pinyin: 'èr', meaning: 'Two', example: '我有两个猫。', exampleMeaning: 'I have two cats.' }, 
+      { char: '三', pinyin: 'sān', meaning: 'Three', example: '这里有三个人。', exampleMeaning: 'There are three people here.' }, 
+      { char: '四', pinyin: 'sì', meaning: 'Four', example: '我有四本书。', exampleMeaning: 'I have four books.' }, 
+      { char: '五', pinyin: 'wǔ', meaning: 'Five', example: '我有五个手指。', exampleMeaning: 'I have five fingers.' }, 
+      { char: '六', pinyin: 'liù', meaning: 'Six', example: '六点钟了。', exampleMeaning: "It's six o'clock." }, 
+      { char: '七', pinyin: 'qī', meaning: 'Seven', example: '一星期有七天。', exampleMeaning: 'There are seven days in a week.' }, 
+      { char: '八', pinyin: 'bā', meaning: 'Eight', example: '他八岁了。', exampleMeaning: "He's eight years old." }, 
+      { char: '九', pinyin: 'jiǔ', meaning: 'Nine', example: '九月是秋天。', exampleMeaning: 'September is autumn.' }, 
+      { char: '十', pinyin: 'shí', meaning: 'Ten', example: '我有十块钱。', exampleMeaning: 'I have ten yuan.' }
+    ] 
+  },
+  { 
+    title: 'Greetings', 
+    desc: 'Basic hellos', 
+    content: [
+      { char: '你好', pinyin: 'nǐ hǎo', meaning: 'Hello', example: '你好，很高兴见到你。', exampleMeaning: 'Hello, nice to meet you.' }, 
+      { char: '谢谢', pinyin: 'xièxie', meaning: 'Thank you', example: '谢谢你的帮助。', exampleMeaning: 'Thank you for your help.' }, 
+      { char: '不客气', pinyin: 'bú kèqi', meaning: "You're welcome", example: '不客气，这是我应该做的。', exampleMeaning: "You're welcome, it's what I should do." }, 
+      { char: '再见', pinyin: 'zàijiàn', meaning: 'Goodbye', example: '再见，明天见。', exampleMeaning: 'Goodbye, see you tomorrow.' }
+    ] 
+  },
+  { 
+    title: 'Family', 
+    desc: 'Mom and Dad', 
+    content: [
+      { char: '爸爸', pinyin: 'bàba', meaning: 'Dad', example: '我爸爸在工作。', exampleMeaning: 'My dad is working.' }, 
+      { char: '妈妈', pinyin: 'māma', meaning: 'Mom', example: '我妈妈很漂亮。', exampleMeaning: 'My mom is very beautiful.' }, 
+      { char: '哥哥', pinyin: 'gēge', meaning: 'Older Brother', example: '我哥哥喜欢打篮球。', exampleMeaning: 'My older brother likes playing basketball.' }, 
+      { char: '姐姐', pinyin: 'jiějie', meaning: 'Older Sister', example: '我姐姐在看书。', exampleMeaning: 'My older sister is reading a book.' }
+    ] 
+  },
+  { 
+    title: 'Food', 
+    desc: 'Common dishes', 
+    content: [
+      { char: '米饭', pinyin: 'mǐfàn', meaning: 'Rice', example: '我喜欢吃米饭。', exampleMeaning: 'I like eating rice.' }, 
+      { char: '面条', pinyin: 'miàntiáo', meaning: 'Noodles', example: '面条很好吃。', exampleMeaning: 'Noodles are delicious.' }, 
+      { char: '水', pinyin: 'shuǐ', meaning: 'Water', example: '请给我一杯水。', exampleMeaning: 'Please give me a glass of water.' }, 
+      { char: '茶', pinyin: 'chá', meaning: 'Tea', example: '中国人喜欢喝茶。', exampleMeaning: 'Chinese people like drinking tea.' }
+    ] 
+  },
+  { 
+    title: 'Animals', 
+    desc: 'Pets and more', 
+    content: [
+      { char: '猫', pinyin: 'māo', meaning: 'Cat', example: '我有一只可爱的猫。', exampleMeaning: 'I have a cute cat.' }, 
+      { char: '狗', pinyin: 'gǒu', meaning: 'Dog', example: '那只狗在跑。', exampleMeaning: 'That dog is running.' }, 
+      { char: '鸟', pinyin: 'niǎo', meaning: 'Bird', example: '鸟在树上唱歌。', exampleMeaning: 'The bird is singing in the tree.' }, 
+      { char: '鱼', pinyin: 'yú', meaning: 'Fish', example: '鱼在水里游。', exampleMeaning: 'The fish is swimming in the water.' }
+    ] 
+  },
 ];
 
 const VOCABULARY_LIST = [
@@ -282,6 +331,61 @@ const VOCABULARY_LIST = [
   { char: '大', pinyin: 'dà', meaning: 'Big' },
   { char: '小', pinyin: 'xiǎo', meaning: 'Small' },
 ];
+
+interface Activity {
+  date: string;
+  count: number;
+}
+
+const ContributionGraph = ({ activity }: { activity: Activity[] }) => {
+  const today = new Date();
+  const days = Array.from({ length: 91 }, (_, i) => {
+    const date = new Date();
+    date.setDate(today.getDate() - (90 - i));
+    return date.toISOString().split('T')[0];
+  });
+
+  const getActivityCount = (date: string) => {
+    return activity.find(a => a.date === date)?.count || 0;
+  };
+
+  const getColor = (count: number) => {
+    if (count === 0) return 'bg-retro-bg opacity-20';
+    if (count < 2) return 'bg-green-200';
+    if (count < 4) return 'bg-green-400';
+    if (count < 6) return 'bg-green-600';
+    return 'bg-green-800';
+  };
+
+  return (
+    <div className="bg-retro-surface p-4 pixel-border">
+      <div className="flex justify-between items-center mb-3">
+        <h3 className="font-pixel text-[8px] text-retro-accent uppercase tracking-widest">Learning Activity</h3>
+        <div className="flex gap-1 items-center">
+          <span className="text-[6px] text-retro-primary opacity-60 uppercase">Less</span>
+          <div className="w-2 h-2 bg-retro-bg opacity-20 pixel-border" />
+          <div className="w-2 h-2 bg-green-200 pixel-border" />
+          <div className="w-2 h-2 bg-green-400 pixel-border" />
+          <div className="w-2 h-2 bg-green-600 pixel-border" />
+          <div className="w-2 h-2 bg-green-800 pixel-border" />
+          <span className="text-[6px] text-retro-primary opacity-60 uppercase">More</span>
+        </div>
+      </div>
+      <div className="grid grid-flow-col grid-rows-7 gap-1 overflow-x-auto pb-2 scrollbar-hide">
+        {days.map(date => {
+          const count = getActivityCount(date);
+          return (
+            <div
+              key={date}
+              className={`w-3 h-3 pixel-border ${getColor(count)}`}
+              title={`${date}: ${count} activities`}
+            />
+          );
+        })}
+      </div>
+    </div>
+  );
+};
 
 export default function App() {
   const [currentView, setCurrentView] = useState<View>('home');
@@ -429,6 +533,7 @@ export default function App() {
   const [isTimerRunning, setIsTimerRunning] = useState(false);
   const [timerSeconds, setTimerSeconds] = useState(0);
   const [streak, setStreak] = useState<number>(0);
+  const [activity, setActivity] = useState<Activity[]>([]);
 
   const shopItems: ShopItem[] = [
     { id: 'food-1', name: 'Premium Tuna', price: 50, description: 'Delicious tuna for your cat.', icon: '🐟' },
@@ -523,6 +628,19 @@ export default function App() {
     }
   }, [user]);
 
+  const fetchActivity = useCallback(async () => {
+    if (!user) return;
+    try {
+      const res = await fetch('/api/user/activity');
+      if (res.ok) {
+        const data = await res.json();
+        setActivity(data);
+      }
+    } catch (e) {
+      console.error('Failed to fetch activity', e);
+    }
+  }, [user]);
+
   useEffect(() => {
     fetchUser();
   }, [fetchUser]);
@@ -530,6 +648,10 @@ export default function App() {
   useEffect(() => {
     fetchWords();
   }, [fetchWords]);
+
+  useEffect(() => {
+    fetchActivity();
+  }, [fetchActivity]);
 
   useEffect(() => {
     const savedTheme = localStorage.getItem('catto-theme') as Theme;
@@ -569,18 +691,14 @@ export default function App() {
       .then(data => {
         if (data.streak && data.streak.streak_updated) {
           setStreak(data.streak.new_streak);
-          // Update coins and mood from backend rewards
           setCatCoins(prev => prev + data.streak.reward_coins);
           setMood(prev => Math.min(100, prev + data.streak.reward_mood));
-          setMessages(prev => [...prev, { 
-            role: 'cat', 
-            text: `Meow! Your learning streak is now ${data.streak.new_streak} days! I've awarded you ${data.streak.reward_coins} Cat Coins and +${data.streak.reward_mood}% mood boost! Keep it up! Purr~` 
-          }]);
+          fetchActivity(); // Refresh activity graph
         }
       })
       .catch(e => console.error('Failed to sync with backend', e));
     }
-  }, [levels, mapCats, activeCatIndex, catCoins, inventory, mood, currentMapLevel, timerStartTime, user]);
+  }, [levels, mapCats, activeCatIndex, catCoins, inventory, mood, currentMapLevel, timerStartTime, user, fetchActivity]);
 
   // Real-time Passive Income Tick & Mood Decay
   useEffect(() => {
@@ -678,20 +796,34 @@ export default function App() {
 
   const goToMap = useCallback(() => {
     setCurrentView('map');
-    // We'll use a timeout to ensure the DOM is updated before scrolling
-    setTimeout(() => {
-      if (mapContainerRef.current) {
-        const currentLevelElement = mapContainerRef.current.querySelector(`[data-level-order="${currentMapLevel - 1}"]`);
-        if (currentLevelElement) {
-          currentLevelElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        } else {
-          // Fallback to current status
-          const statusElement = mapContainerRef.current.querySelector('[data-current="true"]');
-          if (statusElement) statusElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }, []);
+
+  // Handle scrolling to current level when view changes to map
+  useEffect(() => {
+    if (currentView === 'map') {
+      const scrollToCurrent = () => {
+        if (mapContainerRef.current) {
+          const currentLevelElement = mapContainerRef.current.querySelector('[data-current="true"]');
+          if (currentLevelElement) {
+            currentLevelElement.scrollIntoView({ behavior: 'auto', block: 'center' });
+            return true;
+          }
         }
-      }
-    }, 100);
-  }, [currentMapLevel]);
+        return false;
+      };
+
+      // Try multiple times to handle potential rendering delays
+      const timer1 = setTimeout(scrollToCurrent, 50);
+      const timer2 = setTimeout(scrollToCurrent, 300);
+      const timer3 = setTimeout(scrollToCurrent, 800);
+      
+      return () => {
+        clearTimeout(timer1);
+        clearTimeout(timer2);
+        clearTimeout(timer3);
+      };
+    }
+  }, [currentView]);
 
   const startLevel = (level: Level) => {
     if (level.status === 'locked') return;
@@ -743,6 +875,7 @@ export default function App() {
     
     if (selectedOption === quizData.answer) {
       setQuizFeedback('correct');
+      playSuccessSound();
       setTimeout(() => {
         completeLevel();
       }, 1500);
@@ -945,10 +1078,34 @@ export default function App() {
     }
   };
 
-  const speak = (text: string) => {
+  const speak = (text: string, rate: number = 1.0) => {
     const utterance = new SpeechSynthesisUtterance(text);
     utterance.lang = 'zh-CN';
+    utterance.rate = rate;
     window.speechSynthesis.speak(utterance);
+  };
+
+  const playSuccessSound = () => {
+    try {
+      const context = new (window.AudioContext || (window as any).webkitAudioContext)();
+      const oscillator = context.createOscillator();
+      const gainNode = context.createGain();
+
+      oscillator.type = 'sine';
+      oscillator.frequency.setValueAtTime(523.25, context.currentTime); // C5
+      oscillator.frequency.exponentialRampToValueAtTime(1046.50, context.currentTime + 0.1); // C6
+
+      gainNode.gain.setValueAtTime(0.1, context.currentTime);
+      gainNode.gain.exponentialRampToValueAtTime(0.01, context.currentTime + 0.3);
+
+      oscillator.connect(gainNode);
+      gainNode.connect(context.destination);
+
+      oscillator.start();
+      oscillator.stop(context.currentTime + 0.3);
+    } catch (e) {
+      console.error('Failed to play sound', e);
+    }
   };
 
   const handleSendMessage = async (e: React.FormEvent) => {
@@ -1169,10 +1326,6 @@ export default function App() {
         {/* User Profile Bar (Mini) */}
         <div className="flex justify-between items-center mb-4">
           <div className="flex items-center gap-2">
-            <div className="flex items-center gap-2 bg-retro-surface px-2 py-1 pixel-border">
-              <Coins size={10} className="text-yellow-500" />
-              <span className="font-sans text-[10px] font-bold text-retro-accent">{catCoins}</span>
-            </div>
             {streak > 0 && (
               <div className="flex items-center gap-2 bg-retro-surface px-2 py-1 pixel-border">
                 <Flame size={10} className="text-orange-500" />
@@ -1181,15 +1334,6 @@ export default function App() {
             )}
           </div>
           <div className="flex items-center gap-4">
-            {/* Study Timer Mini */}
-            <div className={`flex items-center gap-2 bg-retro-surface px-2 py-1 pixel-border ${isTimerRunning ? 'border-retro-accent animate-pulse' : ''}`}>
-              <Timer size={10} className={isTimerRunning ? 'text-retro-accent' : 'text-retro-primary'} />
-              <span className="font-sans text-[10px] font-bold text-retro-accent">{formatTime(timerSeconds)}</span>
-              <button onClick={toggleTimer} className="text-retro-primary hover:text-retro-accent">
-                {isTimerRunning ? <Square size={10} /> : <Play size={10} />}
-              </button>
-            </div>
-
             {user ? (
               <div className="flex items-center gap-2 bg-retro-surface p-1 pixel-border">
                 <img src={user.avatar_url} alt={user.username} className="w-6 h-6 pixel-border border-retro-primary" />
@@ -1224,53 +1368,8 @@ export default function App() {
               exit={{ opacity: 0, x: 20 }}
               className="space-y-6"
             >
-              {/* Stats Bar */}
-              <div className="grid grid-cols-2 gap-4">
-                <div className="bg-retro-surface p-4 pixel-border flex items-center gap-3 shadow-[4px_4px_0_0_var(--color-1)]">
-                  <div className="p-2 bg-yellow-100 pixel-border">
-                    <Coins className="text-yellow-600" size={16} />
-                  </div>
-                  <div>
-                    <p className="font-sans font-bold text-[10px] text-retro-primary opacity-60 uppercase">Cat Coins</p>
-                    <p className="font-sans font-bold text-[10px] text-retro-accent">{catCoins}</p>
-                  </div>
-                </div>
-                <div className="bg-retro-surface p-4 pixel-border flex items-center gap-3 shadow-[4px_4px_0_0_var(--color-2)]">
-                  <div className="p-2 bg-pink-100 pixel-border">
-                    <Heart className="text-pink-600" size={16} />
-                  </div>
-                  <div className="flex-1">
-                    <p className="font-sans font-bold text-[10px] text-retro-primary opacity-60 uppercase">Cat Mood</p>
-                    <div className="w-full h-2 bg-retro-bg pixel-border mt-1 overflow-hidden">
-                      <motion.div 
-                        animate={{ width: `${mood}%` }}
-                        className={`h-full ${mood > 50 ? 'bg-green-500' : mood > 20 ? 'bg-yellow-500' : 'bg-red-500'}`}
-                      />
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div className="bg-retro-surface p-4 pixel-border flex items-center gap-3 shadow-[4px_4px_0_0_var(--color-3)]">
-                  <div className="p-2 bg-orange-100 pixel-border">
-                    <Flame className="text-orange-600" size={16} />
-                  </div>
-                  <div>
-                    <p className="font-sans font-bold text-[10px] text-retro-primary opacity-60 uppercase">Streak</p>
-                    <p className="font-sans font-bold text-[10px] text-retro-accent">{streak} DAYS</p>
-                  </div>
-                </div>
-                <div className="bg-retro-surface p-4 pixel-border flex items-center gap-3 shadow-[4px_4px_0_0_var(--color-4)]">
-                  <div className="p-2 bg-blue-100 pixel-border">
-                    <Timer className="text-blue-600" size={16} />
-                  </div>
-                  <div>
-                    <p className="font-sans font-bold text-[10px] text-retro-primary opacity-60 uppercase">Study Time</p>
-                    <p className="font-sans font-bold text-[10px] text-retro-accent">{formatTime(timerSeconds)}</p>
-                  </div>
-                </div>
-              </div>
+              {/* Contribution Graph */}
+              <ContributionGraph activity={activity} />
 
               {/* Header */}
               <header className="text-center mb-8">
@@ -1319,28 +1418,6 @@ export default function App() {
                     className="space-y-4"
                   >
                     <div className="bg-retro-surface p-4 pixel-border h-[300px] overflow-y-auto space-y-4 scrollbar-hide relative">
-                      {/* Mood Indicator */}
-                      <div className="sticky top-0 right-0 flex justify-end z-20 pointer-events-none">
-                        <div className="bg-retro-surface/80 backdrop-blur-sm pixel-border p-1 flex items-center gap-1 shadow-lg">
-                          <span className="font-pixel text-[6px] text-retro-primary uppercase">Mood</span>
-                          <div className="flex gap-0.5">
-                            {Array.from({ length: 5 }).map((_, i) => (
-                              <motion.div
-                                key={i}
-                                animate={mood > i * 20 ? { scale: [1, 1.2, 1] } : {}}
-                                transition={{ duration: 1, repeat: Infinity, delay: i * 0.2 }}
-                              >
-                                <Heart 
-                                  size={8} 
-                                  className={mood > i * 20 ? 'text-red-500 fill-red-500' : 'text-retro-border'} 
-                                />
-                              </motion.div>
-                            ))}
-                          </div>
-                          <span className="font-pixel text-[6px] text-retro-accent ml-1">{mood}%</span>
-                        </div>
-                      </div>
-
                       {messages.map((msg, i) => (
                         <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                           <div className={`max-w-[80%] p-3 pixel-border ${msg.role === 'user' ? 'bg-retro-primary text-white' : 'bg-retro-bg border-retro-primary'}`}>
@@ -1496,17 +1573,29 @@ export default function App() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="h-[calc(100vh-180px)] flex flex-col"
+              className="h-[calc(100vh-180px)] flex flex-col relative"
             >
               <div className="text-center mb-4">
                 <h2 className="font-pixel text-sm text-retro-accent uppercase tracking-widest mb-1">Infinite Journey</h2>
                 <p className="font-pixel text-[6px] text-retro-primary opacity-60">CLIMB THE ENDLESS PATH OF KNOWLEDGE</p>
               </div>
+
+              {/* Jump to Current Button */}
+              <button 
+                onClick={() => {
+                  const current = mapContainerRef.current?.querySelector('[data-current="true"]');
+                  current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }}
+                className="absolute top-12 right-0 z-50 pixel-button p-2 bg-retro-accent text-white shadow-lg"
+                title="Jump to Current"
+              >
+                <MapIcon size={16} />
+              </button>
               
-              <div ref={mapContainerRef} className="flex-1 bg-[#4ade80]/20 relative overflow-y-auto overflow-x-hidden scrollbar-hide p-8 rounded-3xl">
+              <div ref={mapContainerRef} className="flex-1 bg-[#4ade80]/20 relative overflow-y-auto overflow-x-hidden scrollbar-hide p-8 rounded-3xl border-4 border-retro-primary/20">
                 {/* Meadow Decorations */}
                 <div className="absolute inset-0 pointer-events-none">
-                  {Array.from({ length: 20 }).map((_, i) => (
+                  {Array.from({ length: 30 }).map((_, i) => (
                     <motion.div
                       key={i}
                       initial={{ opacity: 0 }}
@@ -1515,43 +1604,45 @@ export default function App() {
                       className="absolute text-[10px]"
                       style={{ 
                         left: `${Math.random() * 100}%`, 
-                        top: `${Math.random() * 2000}px` 
+                        top: `${Math.random() * 3000}px` 
                       }}
                     >
-                      {['🌱', '🌸', '🌼', '🍀'][Math.floor(Math.random() * 4)]}
+                      {['🌱', '🌸', '🌼', '🍀', '🍄'][Math.floor(Math.random() * 5)]}
                     </motion.div>
                   ))}
                 </div>
 
                 {/* The Path */}
-                <div className="relative min-h-[2000px] w-full flex flex-col items-center py-20">
+                <div className="relative min-h-[2500px] w-full flex flex-col items-center py-40">
                   <svg className="absolute inset-0 w-full h-full pointer-events-none" preserveAspectRatio="none">
                     <path
                       d={levels.map((l, i) => {
+                        // i=0 is bottom, i=N is top
                         const x = 50 + Math.sin(i * 0.8) * 30;
-                        const y = i * 266 + 100;
+                        const y = (levels.length - 1 - i) * 260 + 150;
                         return `${i === 0 ? 'M' : 'L'} ${x}% ${y}`;
                       }).join(' ')}
                       fill="none"
                       stroke="#166534"
-                      strokeWidth="4"
-                      strokeDasharray="8 8"
+                      strokeWidth="6"
+                      strokeDasharray="12 12"
                       className="opacity-20"
                     />
                   </svg>
 
-                  {levels.map((level, i) => {
-                    const xOffset = Math.sin(i * 0.8) * 30;
-                    const isMilestone = (i + 1) % 5 === 0;
-                    const milestoneCat = isMilestone ? mapCats[Math.floor(i / 5) % mapCats.length] : null;
+                  {[...levels].reverse().map((level, i) => {
+                    const displayIdx = levels.length - 1 - i;
+                    const xOffset = Math.sin(displayIdx * 0.8) * 30;
+                    const isMilestone = (displayIdx + 1) % 5 === 0;
+                    const milestoneCat = isMilestone ? mapCats[Math.floor(displayIdx / 5) % mapCats.length] : null;
                     const isCurrent = level.status === 'current';
                     
                     const houseColors = [
-                      'bg-rose-400', 'bg-amber-400', 'bg-emerald-400', 
-                      'bg-sky-400', 'bg-violet-400', 'bg-fuchsia-400',
-                      'bg-orange-400', 'bg-lime-400', 'bg-cyan-400'
+                      '#fb7185', '#fbbf24', '#34d399', 
+                      '#38bdf8', '#a78bfa', '#f472b6',
+                      '#fb923c', '#a3e635', '#22d3ee'
                     ];
-                    const houseColor = houseColors[i % houseColors.length];
+                    const houseColor = houseColors[displayIdx % houseColors.length];
 
                     return (
                       <div key={level.id} className="relative w-full flex flex-col items-center">
@@ -1559,26 +1650,26 @@ export default function App() {
                         {isMilestone && milestoneCat && (
                           <motion.div 
                             initial={{ opacity: 0, scale: 0.8 }}
-                            whileInView={{ opacity: 0.5, scale: 1 }}
-                            className="absolute -z-10 w-64 h-64 overflow-hidden grayscale-0"
+                            whileInView={{ opacity: 0.6, scale: 1 }}
+                            className="absolute -z-10 w-48 h-48"
                             style={{ 
-                              left: i % 2 === 0 ? '5%' : '60%',
+                              left: displayIdx % 2 === 0 ? '2%' : '65%',
                               top: '50%',
                               transform: 'translateY(-50%)'
                             }}
                           >
-                            <div className="relative w-full h-full p-2 bg-white/10 border-4 border-retro-accent/20 rounded-xl backdrop-blur-sm">
+                            <div className="relative w-full h-full p-2 bg-white/20 border-4 border-retro-accent/30 rounded-2xl backdrop-blur-md shadow-xl">
                               <img 
                                 src={milestoneCat.imageUrl} 
                                 alt="milestone" 
-                                className="w-full h-full object-cover pixel-border opacity-70"
+                                className="w-full h-full object-cover pixel-border"
                                 referrerPolicy="no-referrer"
                                 onError={(e) => {
-                                  (e.target as HTMLImageElement).src = 'https://picsum.photos/seed/cat/200/200';
+                                  (e.target as HTMLImageElement).src = `https://picsum.photos/seed/${milestoneCat.id}/200/200`;
                                 }}
                               />
-                              <div className="absolute inset-0 flex items-end justify-center pb-4 bg-gradient-to-t from-black/50 to-transparent">
-                                <span className="font-pixel text-[10px] text-white uppercase tracking-widest">{milestoneCat.name}</span>
+                              <div className="absolute -top-4 -left-4 bg-retro-accent text-white font-pixel text-[8px] px-2 py-1 pixel-border shadow-lg">
+                                RARE CAT!
                               </div>
                             </div>
                           </motion.div>
@@ -1587,101 +1678,78 @@ export default function App() {
                         <motion.div
                           initial={{ scale: 0, opacity: 0 }}
                           whileInView={{ scale: 1, opacity: 1 }}
-                          viewport={{ once: true }}
+                          viewport={{ once: true, margin: "-100px" }}
                           style={{ 
                             marginLeft: `${xOffset}%`,
-                            marginTop: i === 0 ? 0 : 170
+                            marginTop: i === 0 ? 0 : 160
                           }}
                           data-current={isCurrent}
-                          data-level-order={i}
+                          data-level-order={displayIdx}
                           className="relative z-10"
                         >
-                          {/* Flying Cat Following Current Level */}
+                          {/* Indicator for Current Level */}
                           {isCurrent && (
-                            <motion.div
-                              initial={{ x: -100, opacity: 0 }}
-                              animate={{ 
-                                x: -70, 
-                                opacity: 1,
-                                y: [0, -10, 0]
-                              }}
-                              transition={{
-                                y: { duration: 2, repeat: Infinity, ease: "easeInOut" },
-                                x: { duration: 0.5 },
-                                opacity: { duration: 0.5 }
-                              }}
-                              className="absolute top-0 left-0 z-40 pointer-events-none"
-                            >
-                              <PixelCat animated={true} className="scale-[0.4] origin-right" />
-                            </motion.div>
+                            <>
+                              <motion.div
+                                animate={{ scale: [1, 1.4, 1], opacity: [0.5, 0, 0.5] }}
+                                transition={{ duration: 2, repeat: Infinity }}
+                                className="absolute inset-0 bg-retro-accent rounded-full blur-2xl -z-10"
+                              />
+                              <motion.div
+                                initial={{ y: -60, opacity: 0 }}
+                                animate={{ y: -45, opacity: 1 }}
+                                className="absolute -top-12 left-1/2 -translate-x-1/2 z-50 whitespace-nowrap"
+                              >
+                                <div className="bg-retro-accent text-white font-pixel text-[10px] px-3 py-1 pixel-border shadow-xl animate-bounce">
+                                  YOU ARE HERE!
+                                </div>
+                                <div className="w-0 h-0 border-l-[6px] border-l-transparent border-r-[6px] border-r-transparent border-t-[6px] border-t-retro-accent mx-auto" />
+                              </motion.div>
+                            </>
                           )}
 
                           <div className="relative group/node">
                             <button
                               onClick={() => startLevel(level)}
                               disabled={level.status === 'locked'}
-                              className={`w-24 h-24 flex flex-col items-center justify-center transition-all relative p-2 rounded-2xl ${
-                                isCurrent ? 'animate-bounce border-4 border-retro-accent bg-white/10 shadow-[0_0_20px_rgba(244,114,182,0.4)]' : ''
+                              className={`w-28 h-28 flex flex-col items-center justify-center transition-all relative p-2 rounded-3xl ${
+                                isCurrent ? 'border-4 border-retro-accent bg-white/30 shadow-[0_0_40px_rgba(244,114,182,0.8)] scale-125 z-20' : 
+                                level.status === 'completed' ? 'bg-retro-accent/20 border-2 border-retro-accent/40' : 'opacity-40 grayscale'
                               } hover:scale-110 active:scale-95`}
                             >
-                              <PixelAnimalHouse 
-                                type={level.animalType || 'cat'} 
-                                color={
-                                  houseColor === 'bg-rose-400' ? '#fb7185' :
-                                  houseColor === 'bg-amber-400' ? '#fbbf24' :
-                                  houseColor === 'bg-emerald-400' ? '#34d399' :
-                                  houseColor === 'bg-sky-400' ? '#38bdf8' :
-                                  houseColor === 'bg-violet-400' ? '#a78bfa' :
-                                  houseColor === 'bg-fuchsia-400' ? '#e879f9' :
-                                  houseColor === 'bg-orange-400' ? '#fb923c' :
-                                  houseColor === 'bg-lime-400' ? '#a3e635' :
-                                  '#22d3ee'
-                                }
-                                status={level.status}
-                                className={isCurrent ? 'drop-shadow-[0_0_10px_rgba(255,255,255,0.8)]' : ''}
-                              />
-                              
-                              <div className="absolute inset-0 flex flex-col items-center justify-center pt-8">
-                                <div className="flex items-center gap-1 bg-black/20 px-1 rounded-full">
-                                  <span className="font-pixel text-[10px] text-white drop-shadow-md">{i + 1}</span>
-                                  {level.status === 'completed' && <CheckCircle2 size={10} className="text-green-300" />}
+                              <div className="absolute -top-3 -left-3 z-30">
+                                <div className={`w-8 h-8 rounded-full flex items-center justify-center font-pixel text-[10px] pixel-border shadow-md ${
+                                  isCurrent ? 'bg-retro-accent text-white' : 
+                                  level.status === 'completed' ? 'bg-green-500 text-white' : 'bg-retro-bg text-retro-primary'
+                                }`}>
+                                  {displayIdx + 1}
                                 </div>
                               </div>
 
-                              {isMilestone && (
-                                <div className="absolute -top-2 -right-2 bg-yellow-400 p-1 pixel-border animate-pulse">
-                                  <Sparkles size={10} className="text-white" />
+                              <PixelAnimalHouse 
+                                type={level.animalType || 'cat'} 
+                                color={houseColor}
+                                status={level.status}
+                                className={isCurrent ? "scale-110" : ""}
+                              />
+                              
+                              <div className="mt-2 text-center">
+                                <p className={`font-pixel text-[8px] uppercase tracking-tighter ${isCurrent ? 'text-retro-accent font-bold' : 'text-retro-primary'}`}>
+                                  {level.title}
+                                </p>
+                              </div>
+
+                              {level.status === 'completed' && (
+                                <div className="absolute -bottom-2 -right-2 bg-green-500 text-white p-1 rounded-full pixel-border shadow-sm">
+                                  <CheckCircle2 size={12} />
                                 </div>
                               )}
                             </button>
-
-                            {/* Level Info Tooltip */}
-                            <div className="absolute left-full ml-4 top-1/2 -translate-y-1/2 opacity-0 group-hover/node:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-30">
-                              <div className="bg-retro-surface pixel-border p-3 shadow-xl max-w-[150px]">
-                                <p className="font-sans font-bold text-xs text-retro-accent mb-1">{level.title}</p>
-                                <p className="font-sans text-[10px] text-retro-primary font-medium uppercase leading-tight">{level.description}</p>
-                                {isMilestone && <p className="font-sans font-bold text-[8px] text-yellow-500 mt-1">✨ CAT UNLOCK MILESTONE ✨</p>}
-                                {level.status === 'completed' && (
-                                  <div className="mt-2 flex items-center gap-1 text-green-500">
-                                    <CheckCircle2 size={10} />
-                                    <span className="font-sans font-bold text-[8px]">MASTERED</span>
-                                  </div>
-                                )}
-                              </div>
-                            </div>
-                            
-                            <div className="absolute -bottom-8 left-1/2 -translate-x-1/2 whitespace-nowrap">
-                              <span className={`font-sans font-bold text-[10px] uppercase tracking-tighter ${
-                                isCurrent ? 'text-retro-accent' : 'text-retro-primary opacity-60'
-                              }`}>
-                                {level.title}
-                              </span>
-                            </div>
                           </div>
                         </motion.div>
                       </div>
                     );
-                  }).reverse()}
+                  })}
                 </div>
               </div>
 
@@ -1692,7 +1760,7 @@ export default function App() {
                   <span className="font-pixel text-[6px] text-retro-primary uppercase">Mastered</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 bg-retro-primary pixel-border border-rose-700" />
+                  <div className="w-3 h-3 bg-retro-accent pixel-border border-rose-700" />
                   <span className="font-pixel text-[6px] text-retro-primary uppercase">Current</span>
                 </div>
                 <div className="flex items-center gap-2">
@@ -1839,14 +1907,54 @@ export default function App() {
                         <div className="text-2xl text-retro-text opacity-80">
                           {selectedLevel.content[levelProgress].meaning}
                         </div>
+                        
+                        {selectedLevel.content[levelProgress].example && (
+                          <motion.div 
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            className="mt-6 p-4 bg-retro-bg/50 pixel-border max-w-md mx-auto"
+                          >
+                            <p className="font-sans font-bold text-[10px] text-retro-accent mb-1 uppercase tracking-wider">Example Sentence</p>
+                            <p className="text-lg text-retro-text mb-1">{selectedLevel.content[levelProgress].example}</p>
+                            <p className="font-sans text-[10px] text-retro-primary italic opacity-80">{selectedLevel.content[levelProgress].exampleMeaning}</p>
+                          </motion.div>
+                        )}
                       </div>
 
-                      <div className="flex justify-center gap-4">
-                        <button onClick={() => speak(selectedLevel.content[levelProgress].char)} className="pixel-button">
-                          <Volume2 size={20} />
-                        </button>
-                        <button onClick={nextStep} className="pixel-button flex items-center gap-2">
-                          <span>{levelProgress === selectedLevel.content.length - 1 ? 'FINISH' : 'NEXT'}</span>
+                      <div className="flex flex-col items-center gap-6">
+                        <div className="flex justify-center gap-4">
+                          <button 
+                            onClick={() => speak(selectedLevel.content[levelProgress].char)} 
+                            className="pixel-button flex flex-col items-center gap-1 min-w-[80px]"
+                            title="Normal Speed"
+                          >
+                            <Volume2 size={20} />
+                            <span className="font-sans font-bold text-[8px] uppercase">Normal</span>
+                          </button>
+                          <button 
+                            onClick={() => speak(selectedLevel.content[levelProgress].char, 0.5)} 
+                            className="pixel-button flex flex-col items-center gap-1 min-w-[80px] border-retro-accent/50"
+                            title="Slow Speed"
+                          >
+                            <Turtle size={20} className="text-retro-accent" />
+                            <span className="font-sans font-bold text-[8px] uppercase text-retro-accent">Slow</span>
+                          </button>
+                        </div>
+                        
+                        {selectedLevel.content[levelProgress].example && (
+                          <button 
+                            onClick={() => speak(selectedLevel.content[levelProgress].example || '')} 
+                            className="font-sans font-bold text-[10px] text-retro-primary hover:text-retro-accent flex items-center gap-2 transition-colors uppercase tracking-widest"
+                          >
+                            <Volume2 size={14} />
+                            Listen to Example
+                          </button>
+                        )}
+                      </div>
+
+                      <div className="flex justify-center pt-4">
+                        <button onClick={nextStep} className="pixel-button flex items-center gap-2 px-10 py-3 bg-retro-accent text-white shadow-[4px_4px_0_0_#b45309]">
+                          <span className="font-sans font-bold uppercase tracking-widest">{levelProgress === selectedLevel.content.length - 1 ? 'Finish Lesson' : 'Next Word'}</span>
                           <ChevronRight size={16} />
                         </button>
                       </div>
