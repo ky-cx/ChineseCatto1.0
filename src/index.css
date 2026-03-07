@@ -28,16 +28,16 @@
 }
 
 .dark {
-  --bg: #1c1917; /* stone-900 */
-  --surface: #292524; /* stone-800 */
-  --border: #f59e0b; /* amber-500 */
-  --text: #fef3c7; /* amber-100 */
-  --primary: #d97706; /* amber-600 */
-  --accent: #fbbf24; /* amber-400 */
-  --color-1: #1c1917;
-  --color-2: #292524;
-  --color-3: #44403c;
-  --color-4: #78350f;
+  --bg: #0f172a; /* slate-900 */
+  --surface: #1e293b; /* slate-800 */
+  --border: #38bdf8; /* sky-400 */
+  --text: #f1f5f9; /* slate-100 */
+  --primary: #0ea5e9; /* sky-500 */
+  --accent: #f472b6; /* pink-400 */
+  --color-1: #0f172a;
+  --color-2: #1e293b;
+  --color-3: #334155;
+  --color-4: #0369a1;
 }
 
 .colorful {

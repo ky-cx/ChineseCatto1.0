@@ -1,9 +1,9 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Plus, Trash2, Book, Sparkles, Volume2, Github, LogOut, User as UserIcon, Map as MapIcon, Settings as SettingsIcon, Home as HomeIcon, ChevronRight, Lock, MessageSquare, Send, Loader2, Sun, Moon, ArrowLeft, CheckCircle2, Cat, ShoppingBag, Timer, Play, Pause, Square, Coins, Heart, Flame, Turtle } from 'lucide-react';
 import { GoogleGenAI } from "@google/genai";
 
-type View = 'home' | 'map' | 'settings' | 'level' | 'library' | 'shop' | 'vocabulary';
+type View = 'home' | 'map' | 'settings' | 'level' | 'library' | 'shop' | 'vocabulary' | 'flashcards';
 type HomeSubView = 'chat' | 'collector';
 type Theme = 'dark' | 'light' | 'colorful';
 
@@ -66,6 +66,123 @@ interface Word {
   meaning: string;
   createdAt: number;
 }
+
+const PixelImage = ({ prompt, className = "" }: { prompt: string; className?: string }) => {
+  const [imageUrl, setImageUrl] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    const generateImage = async () => {
+      if (!prompt) return;
+      setLoading(true);
+      try {
+        const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+        const response = await ai.models.generateContent({
+          model: 'gemini-2.5-flash-image',
+          contents: {
+            parts: [{ text: `A simple, cute, 8-bit pixel art illustration of ${prompt}, vibrant colors, white background, centered.` }],
+          },
+          config: {
+            imageConfig: { aspectRatio: "1:1" }
+          }
+        });
+        
+        if (response.candidates?.[0]?.content?.parts) {
+          for (const part of response.candidates[0].content.parts) {
+            if (part.inlineData) {
+              setImageUrl(`data:image/png;base64,${part.inlineData.data}`);
+              break;
+            }
+          }
+        }
+      } catch (e) {
+        console.error('Failed to generate image', e);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    generateImage();
+  }, [prompt]);
+
+  if (loading) return <div className={`bg-retro-bg animate-pulse flex items-center justify-center pixel-border ${className}`}><Loader2 className="animate-spin text-retro-primary" /></div>;
+  if (!imageUrl) return <div className={`bg-retro-bg flex items-center justify-center pixel-border ${className}`}><Sparkles className="text-retro-border" /></div>;
+
+  return <img src={imageUrl} alt={prompt} className={`pixel-border object-cover ${className}`} referrerPolicy="no-referrer" />;
+};
+
+const FlashcardReview = ({ words, onBack, onSpeak }: { words: Word[]; onBack: () => void; onSpeak: (text: string) => void }) => {
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [isFlipped, setIsFlipped] = useState(false);
+
+  if (words.length === 0) {
+    return (
+      <div className="text-center py-12 space-y-4">
+        <Sparkles className="mx-auto text-retro-border" size={48} />
+        <p className="font-pixel text-[10px] text-retro-border uppercase">No words to review yet!</p>
+        <button onClick={onBack} className="pixel-button">Go Back</button>
+      </div>
+    );
+  }
+
+  const currentWord = words[currentIndex];
+
+  return (
+    <div className="space-y-8">
+      <div className="flex items-center justify-between">
+        <button onClick={onBack} className="pixel-button p-2"><ArrowLeft size={16} /></button>
+        <div className="font-pixel text-[8px] text-retro-accent uppercase">Review Mode: {currentIndex + 1} / {words.length}</div>
+      </div>
+
+      <div className="flex justify-center">
+        <motion.div 
+          className="w-full max-w-sm aspect-[3/4] cursor-pointer perspective-1000"
+          onClick={() => setIsFlipped(!isFlipped)}
+          animate={{ rotateY: isFlipped ? 180 : 0 }}
+          transition={{ duration: 0.6, type: "spring", stiffness: 260, damping: 20 }}
+          style={{ transformStyle: 'preserve-3d' }}
+        >
+          {/* Front */}
+          <div className="absolute inset-0 backface-hidden bg-retro-surface pixel-border flex flex-col items-center justify-center p-8 space-y-8">
+            <PixelImage prompt={currentWord.meaning} className="w-32 h-32" />
+            <div className="text-6xl font-bold text-retro-accent">{currentWord.character}</div>
+            <p className="font-pixel text-[8px] text-retro-primary uppercase">Click to Reveal</p>
+          </div>
+
+          {/* Back */}
+          <div className="absolute inset-0 backface-hidden bg-retro-surface pixel-border flex flex-col items-center justify-center p-8 space-y-6" style={{ transform: 'rotateY(180deg)' }}>
+            <div className="text-4xl font-bold text-retro-accent">{currentWord.character}</div>
+            <div className="text-xl font-pixel text-retro-primary uppercase tracking-widest">{currentWord.pinyin}</div>
+            <div className="text-2xl text-retro-text font-bold">{currentWord.meaning}</div>
+            <div className="pt-8">
+              <button 
+                onClick={(e) => { e.stopPropagation(); onSpeak(currentWord.character); }}
+                className="pixel-button p-3 rounded-full"
+              >
+                <Volume2 size={24} />
+              </button>
+            </div>
+          </div>
+        </motion.div>
+      </div>
+
+      <div className="flex justify-center gap-4">
+        <button 
+          onClick={() => { setCurrentIndex(prev => (prev - 1 + words.length) % words.length); setIsFlipped(false); }}
+          className="pixel-button px-6"
+        >
+          Prev
+        </button>
+        <button 
+          onClick={() => { setCurrentIndex(prev => (prev + 1) % words.length); setIsFlipped(false); }}
+          className="pixel-button px-6 bg-retro-accent"
+        >
+          Next
+        </button>
+      </div>
+    </div>
+  );
+};
 
 const PixelAnimalHouse = ({ type, color, status, className = "" }: { type: string; color: string; status: string; className?: string }) => {
   const isLocked = status === 'locked';
@@ -534,6 +651,8 @@ export default function App() {
   const [timerSeconds, setTimerSeconds] = useState(0);
   const [streak, setStreak] = useState<number>(0);
   const [activity, setActivity] = useState<Activity[]>([]);
+  const [studyStats, setStudyStats] = useState<{ total: number; today: number }>({ total: 0, today: 0 });
+  const lastSyncedSecondsRef = useRef<number>(0);
 
   const shopItems: ShopItem[] = [
     { id: 'food-1', name: 'Premium Tuna', price: 50, description: 'Delicious tuna for your cat.', icon: '🐟' },
@@ -641,6 +760,19 @@ export default function App() {
     }
   }, [user]);
 
+  const fetchStudyStats = useCallback(async () => {
+    if (!user) return;
+    try {
+      const res = await fetch('/api/user/stats');
+      if (res.ok) {
+        const data = await res.json();
+        setStudyStats({ total: data.total_study_time, today: data.today_study_time });
+      }
+    } catch (e) {
+      console.error('Failed to fetch study stats', e);
+    }
+  }, [user]);
+
   useEffect(() => {
     fetchUser();
   }, [fetchUser]);
@@ -652,6 +784,12 @@ export default function App() {
   useEffect(() => {
     fetchActivity();
   }, [fetchActivity]);
+
+  useEffect(() => {
+    if (currentView === 'settings') {
+      fetchStudyStats();
+    }
+  }, [currentView, fetchStudyStats]);
 
   useEffect(() => {
     const savedTheme = localStorage.getItem('catto-theme') as Theme;
@@ -676,6 +814,11 @@ export default function App() {
 
     // Sync with backend if logged in
     if (user) {
+      // Calculate session duration since last sync
+      const now = Date.now();
+      const currentTotalSeconds = timerStartTime ? Math.floor((now - timerStartTime) / 1000) : timerSeconds;
+      const sessionIncrement = Math.max(0, currentTotalSeconds - lastSyncedSecondsRef.current);
+      
       fetch('/api/user/sync', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -684,11 +827,13 @@ export default function App() {
           inventory: inventory,
           mood: mood,
           current_map_level: currentMapLevel,
-          timer_start_time: timerStartTime
+          timer_start_time: timerStartTime,
+          study_session_duration: sessionIncrement
         })
       })
       .then(res => res.json())
       .then(data => {
+        lastSyncedSecondsRef.current = currentTotalSeconds;
         if (data.streak && data.streak.streak_updated) {
           setStreak(data.streak.new_streak);
           setCatCoins(prev => prev + data.streak.reward_coins);
@@ -698,7 +843,7 @@ export default function App() {
       })
       .catch(e => console.error('Failed to sync with backend', e));
     }
-  }, [levels, mapCats, activeCatIndex, catCoins, inventory, mood, currentMapLevel, timerStartTime, user, fetchActivity]);
+  }, [levels, mapCats, activeCatIndex, catCoins, inventory, mood, currentMapLevel, timerStartTime, user, fetchActivity, timerSeconds]);
 
   // Real-time Passive Income Tick & Mood Decay
   useEffect(() => {
@@ -789,8 +934,12 @@ export default function App() {
   };
 
   const formatTime = (seconds: number) => {
-    const mins = Math.floor(seconds / 60);
+    const hrs = Math.floor(seconds / 3600);
+    const mins = Math.floor((seconds % 3600) / 60);
     const secs = seconds % 60;
+    if (hrs > 0) {
+      return `${hrs}h ${mins}m ${secs}s`;
+    }
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
 
@@ -909,6 +1058,7 @@ export default function App() {
     setIsTimerRunning(false);
     setTimerSeconds(0);
     setTimerStartTime(null);
+    lastSyncedSecondsRef.current = 0;
     setCurrentMapLevel(currentOrder + 2); // Set next level as persistent focus
 
     setLevels(prevLevels => {
@@ -1326,12 +1476,14 @@ export default function App() {
         {/* User Profile Bar (Mini) */}
         <div className="flex justify-between items-center mb-4">
           <div className="flex items-center gap-2">
-            {streak > 0 && (
-              <div className="flex items-center gap-2 bg-retro-surface px-2 py-1 pixel-border">
-                <Flame size={10} className="text-orange-500" />
-                <span className="font-sans text-[10px] font-bold text-retro-accent">{streak} DAY STREAK</span>
-              </div>
-            )}
+            <div className="flex items-center gap-2 bg-retro-surface px-2 py-1 pixel-border">
+              <Flame size={10} className="text-orange-500" />
+              <span className="font-sans text-[10px] font-bold text-retro-accent">{streak}</span>
+            </div>
+            <div className="flex items-center gap-2 bg-retro-surface px-2 py-1 pixel-border">
+              <Coins size={10} className="text-yellow-500" />
+              <span className="font-sans text-[10px] font-bold text-retro-accent">{catCoins}</span>
+            </div>
           </div>
           <div className="flex items-center gap-4">
             {user ? (
@@ -1897,6 +2049,9 @@ export default function App() {
                       exit={{ opacity: 0, scale: 1.1 }}
                       className="space-y-8"
                     >
+                      <div className="flex justify-center">
+                        <PixelImage prompt={selectedLevel.content[levelProgress].meaning} className="w-48 h-48" />
+                      </div>
                       <div className="space-y-4">
                         <div className="text-8xl font-bold text-retro-accent mb-4">
                           {selectedLevel.content[levelProgress].char}
@@ -1975,6 +2130,40 @@ export default function App() {
             >
               <section className="bg-retro-surface p-6 pixel-border">
                 <h3 className="font-sans font-bold text-sm text-retro-accent mb-6 flex items-center gap-2">
+                  <Timer size={16} />
+                  LEARNING STATISTICS
+                </h3>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="p-4 bg-retro-bg pixel-border">
+                    <p className="font-sans font-bold text-[10px] text-retro-primary opacity-60 uppercase mb-1">Today's Study</p>
+                    <p className="font-sans font-bold text-xs text-retro-accent">{formatTime(studyStats.today)}</p>
+                  </div>
+                  <div className="p-4 bg-retro-bg pixel-border">
+                    <p className="font-sans font-bold text-[10px] text-retro-primary opacity-60 uppercase mb-1">Total Study</p>
+                    <p className="font-sans font-bold text-xs text-retro-accent">{formatTime(studyStats.total)}</p>
+                  </div>
+                </div>
+              </section>
+
+              <section className="bg-retro-surface p-6 pixel-border">
+                <h3 className="font-sans font-bold text-sm text-retro-accent mb-6 flex items-center gap-2">
+                  <Sparkles size={16} />
+                  VOCABULARY REVIEW
+                </h3>
+                <div className="space-y-4">
+                  <p className="font-sans text-[10px] text-retro-primary opacity-80 mb-4">Master your collected words with interactive flashcards.</p>
+                  <button 
+                    onClick={() => setCurrentView('flashcards')}
+                    className="w-full pixel-button flex items-center justify-center gap-3 py-4"
+                  >
+                    <Book size={16} />
+                    <span>START FLASHCARD REVIEW</span>
+                  </button>
+                </div>
+              </section>
+
+              <section className="bg-retro-surface p-6 pixel-border">
+                <h3 className="font-sans font-bold text-sm text-retro-accent mb-6 flex items-center gap-2">
                   <UserIcon size={16} />
                   USER PROFILE
                 </h3>
@@ -2029,6 +2218,17 @@ export default function App() {
                 <p className="font-sans font-bold text-[10px] text-retro-border">CHINESECATTO ENGINE V2.1.0</p>
                 <p className="font-sans font-bold text-[10px] text-retro-border mt-2">© 2024 PIXELCAT STUDIOS</p>
               </div>
+            </motion.div>
+          )}
+
+          {currentView === 'flashcards' && (
+            <motion.div
+              key="flashcards"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+            >
+              <FlashcardReview words={words} onBack={() => setCurrentView('settings')} onSpeak={speak} />
             </motion.div>
           )}
 

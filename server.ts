@@ -29,13 +29,15 @@ db.exec(`
     current_map_level INTEGER DEFAULT 1,
     timer_start_time INTEGER,
     streak_count INTEGER DEFAULT 0,
-    last_streak_date TEXT
+    last_streak_date TEXT,
+    total_study_time INTEGER DEFAULT 0
   );
 
   CREATE TABLE IF NOT EXISTS activity (
     user_id TEXT,
     date TEXT,
     count INTEGER DEFAULT 0,
+    duration INTEGER DEFAULT 0,
     PRIMARY KEY(user_id, date),
     FOREIGN KEY(user_id) REFERENCES users(id)
   );
@@ -139,14 +141,22 @@ if (!columns.includes('streak_count')) {
     console.error('Failed to add streak_count column:', e.message);
   }
 }
-if (!columns.includes('last_streak_date')) {
+if (!columns.includes('total_study_time')) {
   try { 
-    console.log('Adding last_streak_date column...');
-    db.exec("ALTER TABLE users ADD COLUMN last_streak_date TEXT"); 
-    console.log('Last_streak_date column added successfully.');
+    console.log('Adding total_study_time column...');
+    db.exec("ALTER TABLE users ADD COLUMN total_study_time INTEGER DEFAULT 0"); 
+    console.log('Total_study_time column added successfully.');
   } catch(e: any) {
-    console.error('Failed to add last_streak_date column:', e.message);
+    console.error('Failed to add total_study_time column:', e.message);
   }
+}
+
+const activityTableInfo = db.prepare("PRAGMA table_info(activity)").all() as any[];
+const activityColumns = activityTableInfo.map(c => c.name);
+if (!activityColumns.includes('duration')) {
+  try {
+    db.exec("ALTER TABLE activity ADD COLUMN duration INTEGER DEFAULT 0");
+  } catch(e: any) {}
 }
 
 import fs from 'fs';
@@ -405,22 +415,36 @@ async function startServer() {
     const user = db.prepare('SELECT * FROM users WHERE id = ?').get(userId) as any;
     if (!user) return res.status(404).json({ error: 'User not found' });
 
-    const { cat_coins, inventory, mood, current_map_level, timer_start_time } = req.body;
+    const { cat_coins, inventory, mood, current_map_level, timer_start_time, study_session_duration } = req.body;
     const now = Date.now();
     
     // Update basic stats
-    db.prepare('UPDATE users SET cat_coins = ?, inventory = ?, mood = ?, current_map_level = ?, timer_start_time = ?, last_income_sync = ? WHERE id = ?')
-      .run(cat_coins, JSON.stringify(inventory), mood ?? 100, current_map_level ?? 1, timer_start_time ?? null, now, userId);
+    db.prepare('UPDATE users SET cat_coins = ?, inventory = ?, mood = ?, current_map_level = ?, timer_start_time = ?, last_income_sync = ?, total_study_time = total_study_time + ? WHERE id = ?')
+      .run(cat_coins, JSON.stringify(inventory), mood ?? 100, current_map_level ?? 1, timer_start_time ?? null, now, study_session_duration ?? 0, userId);
     
-  // Also trigger streak update if they are active
-  const streakResult = updateStreak(user);
+    // Also trigger streak update if they are active
+    const streakResult = updateStreak(user);
 
-  // Record activity for today
+    // Record activity for today
+    const today = new Date().toISOString().split('T')[0];
+    db.prepare('INSERT INTO activity (user_id, date, count, duration) VALUES (?, ?, 1, ?) ON CONFLICT(user_id, date) DO UPDATE SET count = count + 1, duration = duration + ?')
+      .run(userId, today, study_session_duration ?? 0, study_session_duration ?? 0);
+    
+    res.json({ success: true, streak: streakResult });
+  });
+
+app.get('/api/user/stats', (req, res) => {
+  const userId = (req.session as any).userId;
+  if (!userId) return res.status(401).json({ error: 'Unauthorized' });
+
   const today = new Date().toISOString().split('T')[0];
-  db.prepare('INSERT INTO activity (user_id, date, count) VALUES (?, ?, 1) ON CONFLICT(user_id, date) DO UPDATE SET count = count + 1')
-    .run(userId, today);
-  
-  res.json({ success: true, streak: streakResult });
+  const user = db.prepare('SELECT total_study_time FROM users WHERE id = ?').get(userId) as any;
+  const todayActivity = db.prepare('SELECT duration FROM activity WHERE user_id = ? AND date = ?').get(userId, today) as any;
+
+  res.json({
+    total_study_time: user?.total_study_time || 0,
+    today_study_time: todayActivity?.duration || 0
+  });
 });
 
 app.get('/api/user/activity', (req, res) => {
